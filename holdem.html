@@ -1579,6 +1579,8 @@ async function startHand(){
   if (S.phase === 'play') return;
   if (S.tour && (S.tour.done || S.tour.pendingAdv)){ openTourGate(); return; }
   if (S.tour){ const t = S.tour, was = bbAmt(); t.rh = (t.rh || 0) + (t.started ? 1 : 0); t.started = true; if (bbAmt() !== was) S.tourNote = `블라인드가 ${fmt(sbAmt())}/${fmt(bbAmt())}로 올랐습니다`; }
+  if (S.buyQ && !S.tour){ const q = S.buyQ; S.buyQ = null; if (q.bl != null) setBlinds(q.bl); else doRefill(); }
+  S.buyQ = null;
   const me = S.seats[0];
   if (!S.tour && me.stack < bbAmt()){ askBuyin(me.stack + S.cents < 2 ? '칩이 다 떨어졌습니다.' : `칩이 빅 블라인드(${fmt(bbAmt())})보다 적습니다 — 블라인드를 낮추세요.`, true); return; }
   const notes = [];
@@ -2826,8 +2828,8 @@ function render(light){
   setHTML($('tnote'), T ? `토너먼트 ${T.round}/${T.rounds}R · ${tourName(T)} · 남은 ${tourAlive().length}명${T.T > 1 ? ` → ${tourStep(T.T).adv}명` : ''}` : `${MP && MP.T ? MP.T.ns : LOBBY ? 5 : NS}인 · 블라인드 ${fmt(s)}/${fmt(b)}`);
   setHTML($('blindPill'), `${T ? '' : 'NL '}${fmt(sbAmt())}/${fmt(bbAmt())}`);
   setHTML($('feltRule'), `NO LIMIT · BLINDS ${fmt(s)}/${fmt(b)}`);
-  $('bBuy').disabled = S.phase === 'play' || !!VIEW;
-  $('tBlinds').disabled = S.phase === 'play'; $('tBuy').disabled = S.phase === 'play' || !!VIEW || !!S.tour;
+  $('bBuy').disabled = !!VIEW;
+  $('tBlinds').disabled = S.phase === 'play'; $('tBuy').disabled = !!VIEW;
   renderActs();
   renderTourPill(); renderFloor(); markChart();
   if (!light){ renderCoach(); renderBanner(); renderEq(); }
@@ -2963,14 +2965,20 @@ function askBuyin(note, forced){
 }
 $('buyOpts').onclick = e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
+  if (S.phase === 'play' && (b.dataset.bl != null || b.dataset.refill)){
+    S.buyQ = b.dataset.bl != null ? {bl:+b.dataset.bl} : {refill:1}; $('buyin').hidden = true;
+    S.coach = {cls:'tip', text:b.dataset.bl != null ? '이 핸드가 끝나면 블라인드를 바꿉니다' : `이 핸드가 끝나면 ${fmt(REFILL)}으로 채웁니다`}; render(); return; }
   if (b.dataset.bl != null){ $('buyin').hidden = true; setBlinds(+b.dataset.bl); return; }
-  if (!b.dataset.refill || myMoney() >= BROKE || S.tour) return;
+  doRefill();
+};
+function doRefill(){
+  if (myMoney() >= BROKE || S.tour) return;
   const add = Math.round((REFILL - myMoney()) * 100) / 100, v = REFILL; S.seats[0].stack = v; S.cents = 0; S.sess = {hands:0, start:v}; sitAll(Math.max(v, 50 * bbAmt()));
   S.coach = {cls:'tip', text:`지갑을 ${fmt(REFILL)}으로 채웠습니다(+${fmt(add)}) — 여기서 불려 보세요`};
   $('buyin').hidden = true; sfx('chip'); save(); render();
-};
+}
 $('buyCancel').onclick = () => { $('buyin').hidden = true; };
-$('bBuy').onclick = () => { if (S.tour){ S.coach = {cls:'miss', text:'토너먼트 중에는 칩을 바꿀 수 없습니다'}; render(); return; } if (S.phase !== 'play') askBuyin(); };
+$('bBuy').onclick = () => { if (S.tour){ S.coach = {cls:'miss', text:'토너먼트 중에는 칩을 바꿀 수 없습니다'}; render(); return; } askBuyin(S.phase === 'play' ? '핸드 중입니다 — 고른 것은 이 핸드가 끝나면 적용됩니다.' : ''); };
 
 /* ---------- 메뉴 ---------- */
 function syncOpt(){ $('tEq').setAttribute('aria-pressed', S.opt.eq); $('tCoach').setAttribute('aria-pressed', S.opt.coach); $('tFast').setAttribute('aria-pressed', S.opt.fast); $('tSound').setAttribute('aria-pressed', S.opt.sound); }
