@@ -2153,6 +2153,10 @@ function advise(){
     const posTxt = st === 'river' ? '' : ip ? '' : ' · 내가 먼저 행동하는 자리라 승률을 다 못 살림';
     const nc = oppCalls(), cr = checkRaised();
     const read = `${on ? on + '이고, ' : ''}${cr ? '체크했다가 레이즈한 건 센 패라는 신호 — ' : ''}${nc ? `앞에서 ${nc}번 따라온 뒤 ` : ''}${fmt(o.toCall)}를 건 걸 보면 상대는 좋은 쪽 ${P(X)}의 패 — 그래도 내가 이길 확률 ${P(vr)}`;
+    if (trapLive() && st !== 'river' && vr >= 0.6 && commit <= 0.35){
+      const nm = preName(me.hole);
+      return R('call', null, `콜 ${fmt(o.toCall)} 추천 (함정 유지)`, `프리플롭에 ${nm}${eun(nm)} 콜만 해 함정을 팠습니다 — 상대가 걸어 주는 동안은 콜로 숨깁니다. 여기서 올리면 약한 패는 접고 센 패만 남습니다 (지금 ${P(vr)})`);
+    }
     const dr0 = myDraws();
     if (dr0 && st !== 'river' && me.stack > o.toCall * 8 && opp <= 2 && vr >= need * 0.75 && ve < need + m)
       return R('call', null, `콜 ${fmt(o.toCall)} 추천 (드로우)`, `${oi ? '' : dr0 + ' — '}지금은 ${P(vr)}로 조금 모자라도(필요 ${P(need)}), 맞으면 상대 칩을 더 받을 수 있어 따라갈 만합니다`);
@@ -2169,6 +2173,13 @@ function advise(){
   const mo = mainOpp(), my2 = mo && STY[sk(mo)], on = oppNote(mo);
   const station = !!(my2 && (my2.sticky >= 0.03 || my2.doubt >= 0.08)), nit = !!(my2 && my2.tight >= 0.6);
   const valueLine = (st === 'river' ? 0.55 : 0.6) - (station ? 0.05 : 0);
+  if (vr >= valueLine && trapLive()){
+    const seq = (S.lk && S.lk.seq) || [], ord = ['pre', 'flop', 'turn', 'river'], prevSt = ord[ord.indexOf(st) - 1];
+    const backed = seq.some(y => !y.me && y.st === prevSt && (y.a === 'bet' || y.a === 'raise')) && ct;
+    if (backed || st !== 'flop'){ const to = Math.max(bb, Math.round(pot * 0.4));
+      return R('bet', to, `베팅 ${$$(to)} 추천 (함정 풀기 · 팟의 40%)`, `${backed ? '상대가 앞 거리에 걸었다가 이번엔 체크로 물러섰습니다 — ' : '공짜 카드를 또 주면 따라잡힙니다 — '}이제 함정을 풀고 작게 걸어 약한 패의 콜을 받습니다 (지금 ${P(vr)})`); }
+    return R('check', null, '체크 추천 (함정 유지)', `프리플롭에 콜만 해 함정을 팠습니다 — 플롭은 한 번 체크로 숨겨 상대가 먼저 걸게 둡니다 (지금 ${P(vr)})`);
+  }
   if (vr >= valueLine){
     const f = vr >= 0.8 ? 0.75 : st === 'flop' ? 0.5 : 0.66, fr = f === 0.5 ? '½' : f === 0.75 ? '¾' : '⅔';
     const to = Math.max(bb, Math.round(pot * f));
@@ -2569,6 +2580,11 @@ function rdHTML(p){   // 이 손님이 나를 어떻게 보는지 — 판단 문
 // ===== 내 의도 — 기계가 먼저 짐작하고, 내가 한 번 눌러 고친다 =====
 const INTENTS = ['가치', '블러프', '함정', '이미지'];
 const INTENT_T = {'가치':'센 패로 돈을 받아 내려고', '블러프':'약한 패로 접게 하려고', '함정':'센 패를 숨기고 끌어들이려고', '이미지':'내 방식을 읽히지 않으려고(크기·패턴 섞기)'};
+function trapLive(){
+  const seq = (S.lk && S.lk.seq) || [], me = S.seats[0]; if (me.hole.length !== 2) return false;
+  const pre = seq.filter(x => x.me && x.st === 'pre');
+  return topPct(me.hole[0], me.hole[1]) <= 0.06 && pre.some(x => x.a === 'call' || x.a === 'check') && !pre.some(x => x.a === 'raise');
+}
 function intentGuess(){
   const seq = (S.lk && S.lk.seq) || [], me = S.seats[0]; if (me.hole.length !== 2) return null;
   const mine = seq.filter(x => x.me), post = mine.filter(x => x.st !== 'pre'), tp = topPct(me.hole[0], me.hole[1]);
@@ -2625,6 +2641,7 @@ function planRows(intent){
       else if (calls.length) t += ` — ${calls.map(y => y.n).join('·')} 콜${intent === '블러프' ? ' · 블러프가 걸렸습니다' : ' · 가치를 받았습니다'}`;
       else if (intent === '블러프') t += ' — 모두 접었습니다(블러프 성공)';
       else if (intent === '이미지') t += ` — 모두 접었습니다${big ? ' · 이미지용으로 크게 건 의도대로입니다. 이번 판 돈은 덜 받았고, 값은 다음 판에서 합니다(아래 「이미지」 참고)' : ''}`;
+      else if (intent === '함정' && x0.a === 'raise' && st !== 'river'){ t += ' — 모두 접었습니다. 함정이면 여기는 콜로 상대가 계속 걸게 둘 자리였습니다 — 레이즈는 약한 패만 쫓아내고 센 패만 남깁니다(계획과 어긋남)'; miss++; }
       else t += big ? ' — 모두 접었습니다. 이 크기엔 나보다 센 패만 따라와서, 받아 낼 생각이었다면 팟의 ½~⅔가 더 받습니다' : ' — 모두 접었습니다';
     } else if (x0.a === 'fold') t = '접었습니다';
     if (t) out.push({st:NM[st], t, cls:'plan'});
@@ -3379,9 +3396,18 @@ function renderLast(){
 // 손님 이름표를 누르면 그 사람 스타일과 이번에 본 숫자
 // 핸드가 끝난 뒤 테이블을 누르면 폴드한 사람까지 모두의 패를 뒤집어 보인다(어떤 패로 어떻게 쳤나 보려고)
 // 판이 끝나면: 첫 줄 결과 · 둘째 줄 분석(추천과 다르게 친 결정 · 상대 패를 알고 볼 때 내 승률 흐름)
+// 한 줄로: 긴 판정 문장에서 앞의 1~2 마디만(마디 = ' — ' · ' · ' · '. ' 로 끊긴 조각)
+// 함정으로 본 판의 한 줄 — 어긋난 수가 있으면 그 수와 핵심 마디, 없으면 계획 평가
+function trapLine(){
+  const rows = planRows('함정'), r = rows.find(x => /어긋남|놓침|못 받았|공짜 카드를 줬/.test(x.t)) || rows.find(x => x.st === '계획 평가'); if (!r) return '';
+  const ps = r.t.split(/ — | · |\. /), key = ps.slice(1).find(x => /어긋|놓침|자리였습니다|못 받았|바꿉니다|받았습니다/.test(x));
+  return `함정으로 봤습니다 · ${r.st === '계획 평가' ? '' : r.st + ' '}${ps[0]}${key ? ' — ' + key : ''}`.replace(/\.$/, '');
+}
+function firstClause(t, n = 1){ const parts = String(t).split(/ — | · |\. /); return parts.slice(0, n).join(' — ').replace(/\.$/, ''); }
 const TOPIC = {fold:'폴드는', call:'콜은', check:'체크는', raise:'레이즈는', bet:'베팅은'};
 function postAnalysis(al, mainW, pays, delta){
-  const me = S.seats[0], ml = S.myLog || [], miss = ml.filter(x => !x.ok), NM = {pre:'프리플롭', flop:'플롭', turn:'턴', river:'리버'};
+  const me = S.seats[0], ml = S.myLog || [], NM = {pre:'프리플롭', flop:'플롭', turn:'턴', river:'리버'};
+  const trap = !!(S.intent && S.intent.guess === '함정'), miss = ml.filter(x => !x.ok && !(trap && x.street === 'pre' && (x.mine === 'call' || x.mine === 'check')));
   let l1 = '', l2 = '';
   if (me.folded){
     const last = ml[ml.length - 1];
@@ -3393,9 +3419,8 @@ function postAnalysis(al, mainW, pays, delta){
   } else {
     const opp = al.filter(p => !p.me).sort((a, b) => b.best.score - a.best.score)[0];
     l1 = delta > 0 ? `이김 +${fmt(delta)} — 내 ${me.hand} > ${opp.name} ${opp.hand}` : delta < 0 ? `짐 ${fmt(delta)} — ${opp.name} ${opp.hand} > 내 ${me.hand}` : `비김 — 팟을 나눔`;
-    const flow = [0, 3, 4].map(bl => `${bl ? NM[bl === 3 ? 'flop' : 'turn'] : '처음'} ${P(showdownEq([me.hole, opp.hole], S.board.slice(0, bl), 1500)[0])}`).join(' › ');
     const head = miss.length ? `${NM[miss[0].street]} ${TOPIC[miss[0].mine]} 추천(「${miss[0].advL}」)과 달랐습니다` : '판단은 모두 추천대로였습니다' + (delta < 0 ? ' — 이번엔 카드 운' : '');
-    l2 = `${head} · ${opp.name} 패를 알고 보면 내 승률 ${flow}`;
+    l2 = head;   // 승률 흐름은 해설 「정리」에 있다
   }
   S.post = {l1, l2};
 }
@@ -3529,7 +3554,7 @@ ${rk(topPct(q.hole[0], q.hole[1]))}`, c:best ? 'best' : q.folded ? 'fold' : 'han
       }
       const verdict = `${st} ${fmt(lm.amt)} ${isRaise ? '레이즈' : '베팅'} · ${v}${size ? ` · ${size}` : ''}${off ? ` · 그 순간 추천은 「${ACTN[lm.adv]}」${ieot(ACTN[lm.adv])}습니다` : ''}`;
       S.review = {rows:opps.map(q => [q, hn(q), '', false]).concat([[me, hn(me), '', true]]), why:verdict, bl:lm.bl};
-      if (S.post) S.post.l2 = verdict;
+      if (S.post) S.post.l2 = `${st} ${fmt(lm.amt)} ${isRaise ? '레이즈' : '베팅'} · ${firstClause(v)}`;
     }
   } else if (lm && me.hole.length === 2){
     let t = lm.agg > 0 && S.seats[lm.agg] && S.seats[lm.agg].hole.length === 2 ? S.seats[lm.agg] : null;
@@ -3560,8 +3585,12 @@ ${rk(topPct(q.hole[0], q.hole[1]))}`, c:best ? 'best' : q.folded ? 'fold' : 'han
       const verdict = `${oppNames} 패를 알고 보면 내 승률 ${flow}${judgeTxt ? ' · ' + judgeTxt : ''}${resTxt}`;
       const fin = q => S.board.length >= 3 && S.board.length > bd.length ? handName(best5(q.hole.concat(S.board)).score) : '';
       S.review = {rows:opps.map(q => [q, d(q), fin(q), q.won > 0]).concat([[me, d(me), fin(me), me.won > 0]]), why:verdict, bl:lm.bl};
-      if (me.folded && S.post) S.post.l2 = verdict;
+      if (me.folded && S.post) S.post.l2 = `${judgeTxt}${resTxt}` || firstClause(verdict);
     }
+  }
+  // 함정으로 본 판: 둘째 줄은 그 계획 안에서 맞았나 — 어긋난 수가 있으면 그 수, 없으면 계획 평가
+  if (S.post && S.intent && S.intent.guess === '함정' && !me.folded){
+    try { const l = trapLine(); if (l) S.post.l2 = l; } catch (e) {}
   }
   try { S.explain = buildExplain(); } catch (e) { S.explain = null; }
   const h = S.hist[0]; if (h) h.seats.forEach((x, i) => { const q = S.seats[i]; if (q && q.hole.length) x.cards = q.hole.map(c => ({r:c.r, s:c.s})); });
