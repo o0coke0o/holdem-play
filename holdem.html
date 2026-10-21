@@ -728,6 +728,17 @@ body{margin:0}
 .sdp .mc{display:inline-flex;align-items:center;justify-content:center;width:19px;height:26px;border-radius:3px;background:linear-gradient(165deg,#fffdf8,#f3ede0);font-family:var(--display);font-weight:800;font-size:10px;letter-spacing:-.04em;box-shadow:0 1px 2px rgba(0,0,0,.5)}
 .sdp .mc+.mc{margin-left:2px}
 .sdp .mc.r{color:#b3182c} .sdp .mc.k{color:#17120f}
+.felt.half .sdp{padding:6px 6px;gap:2px}
+.felt.half .sdp .sdh{font-size:16px;padding-inline:22px}
+.felt.half .sdp .sdh span{font-size:10.5px;margin-left:4px}
+.felt.half .sdr{gap:4px;padding:2px 3px}
+.felt.half .sdr b{min-width:0;max-width:46px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;font-size:10px;letter-spacing:-.02em}
+.felt.half .sdp .mc{width:16px;height:22px;font-size:9px}
+.felt.half .sdr .hn{font-size:10.5px;white-space:normal;min-width:0}
+.felt.half .sdr .hn small{font-size:9.5px}
+.felt.half .sdr .hk:last-child{margin-right:0}
+.felt.half .sdr .hk ~ i{min-width:26px}
+.felt.half .sdp .sdv{font-size:10.5px;max-width:none}
 .sdp .mc.g{margin-left:7px}
 .sdp .mc.h{box-shadow:0 0 0 1.5px #f3d27a,0 1px 2px rgba(0,0,0,.5)}
 .sdr .cc{display:inline-flex;align-items:center;min-width:0}
@@ -2802,7 +2813,14 @@ function renderSeat(p, i){
 // 결과·복기·받아보기 창 — 보드 위로 자라다 펠트 위로 넘치면 펠트 윗변 안쪽에 붙이고, 그래도 길면 그 안에서 스크롤
 function fitSdp(){
   const p = document.querySelector('#banner .sdp'); if (!p) return;
-  p.style.top = ''; p.style.bottom = ''; p.style.maxHeight = ''; p.style.overflowY = '';
+  p.style.top = ''; p.style.bottom = ''; p.style.maxHeight = ''; p.style.overflowY = ''; p.style.maxWidth = '';
+  // 절반 테이블: 양옆 손님 자리(카드·이름표) 사이 빈 폭 안에만 — 좌우 패를 덮지 않는다
+  if ($('felt').classList.contains('half')){
+    const fr = $('felt').getBoundingClientRect(), mid = fr.left + fr.width / 2; let L = fr.left, R = fr.right;
+    document.querySelectorAll('#felt .seat').forEach(el => { if (el.dataset.pos === '0' || el.classList.contains('empty') && !el.offsetWidth) return;
+      const q = el.getBoundingClientRect(); if (!q.width) return; if (q.left + q.width / 2 < mid) L = Math.max(L, q.right); else R = Math.min(R, q.left); });
+    const gap = Math.min(R - mid, mid - L) * 2 - 6; if (gap > 150) p.style.maxWidth = Math.floor(gap) + 'px';
+  }
   const f = $('felt').getBoundingClientRect(), r = p.getBoundingClientRect(), lim = f.top + 4;
   if (r.top >= lim) return;
   const o = (p.offsetParent || $('felt')).getBoundingClientRect();
