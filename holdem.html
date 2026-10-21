@@ -765,6 +765,8 @@ body.mp .btns.post{grid-template-columns:1fr 1.6fr}
 body.mp .seat .lab .sitbtn{font-size:11px}
 body.lobby #postRow,body.lobby #mpClose{display:none !important}
 .coachwrap.blank{visibility:hidden}
+#mpSheet{align-items:flex-start;background:rgba(0,0,0,.35)}
+#mpSheet .panel{width:min(340px,calc(100% - 32px));margin-top:calc(env(safe-area-inset-top,0px) + 56px);border-radius:16px;border-bottom:1px solid var(--brass-soft);padding:16px 16px 12px}
 body:not(.mp) #chipRow,body.mp #sizeRow{display:none !important}
 .chiprow{display:flex;justify-content:center;align-items:center;gap:8px;padding:2px 0 4px}
 :root{--chip2:#2f7a4f;--chip10:#6b3fa0}   /* 블랙잭 칩(1·5·20)에 없는 두 색 */
@@ -900,7 +902,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
     <button class="tool" id="tReset">테이블 리셋</button>
     <div class="nsrow tourrow"><span>토너먼트</span><button class="tool" data-tour="4">4테이블</button><button class="tool" data-tour="8">8테이블</button><button class="tool" data-tour="16">16테이블</button></div>
     <button class="tool" id="tTourQuit" hidden>지금 순위로 마치기</button>
-    <div class="nsrow mprow"><span>친구 대전</span><button class="tool" id="mpOpen">테이블에 앉기</button><button class="tool" id="mpLink">주소 보내기</button><span id="mpProbe" style="font-size:11px;color:var(--muted)">연결 확인 중…</span></div>
+    <div class="nsrow mprow"><span>친구 대전</span><button class="tool" id="mpOpen">친구 대전 만들기</button><button class="tool" id="mpLink">주소 보내기</button><span id="mpProbe" style="font-size:11px;color:var(--muted)">연결 확인 중…</span></div>
     <div class="nsrow"><span>인원</span><button class="tool" data-ns="4">4인</button><button class="tool" data-ns="6">6인</button><button class="tool" data-ns="8">8인</button></div>
   </div>
 
@@ -997,8 +999,8 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
 
 <div class="sheet" id="mpSheet" hidden>
   <div class="panel" role="dialog" aria-label="친구 대전">
-    <div style="display:flex;justify-content:space-between;align-items:center"><h2>친구 대전</h2><button class="tool" id="mpClose">닫기</button></div>
-    <label class="mpf">내 이름 <small>테이블에 보일 이름</small><input id="mpName" maxlength="12" autocomplete="nickname"></label>
+    <div style="display:flex;justify-content:space-between;align-items:center"><h2>이름</h2><button class="tool" id="mpClose">닫기</button></div>
+    <label class="mpf"><input id="mpName" maxlength="12" autocomplete="nickname" aria-label="이름"></label>
     <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px"><button class="tool" id="mpJoin" aria-pressed="true">앉기</button></div>
     <p class="empty" id="mpMsg" style="margin:8px 0 0"></p>
     <div style="text-align:center"><button id="mpSolo">혼자 연습하기</button></div>
@@ -3492,8 +3494,12 @@ try {
 try { document.body.classList.toggle('ext', window.top === window || /[?&]ext(&|$)/.test(location.search)); } catch (e) {}   // 바깥 사이트에서 직접 열림 = claude.ai 머리줄 자리를 비우지 않는다
 { const fit = () => document.documentElement.style.setProperty('--appH', window.innerHeight + 'px'); fit(); addEventListener('resize', fit); if (window.visualViewport) visualViewport.addEventListener('resize', fit); }
 buildChart(); renderLeak(); buildSeatEls(); syncOpt(); syncNS(); syncTour(); render();
-const MP_ROOM = 'main';   // 테이블은 하나 — 방 이름이 없다
-const MP_PUBLIC = /github\.io$/.test(location.hostname) || /[?&]mp\b/.test(location.search);   // 공개 주소 = 친구 대전 입구(혼자 연습은 claude.ai 쪽) · ?mp 는 로컬 시험용
+const MP_ROOM = (location.search.match(/[?&]mproom=([a-z0-9-]{1,16})/) || [])[1] || 'main';   // 테이블은 하나 — ?mproom= 은 시험용
+const MP_HOST_HASH = 'dd6774454a378fcdc2dbe8c7224fc790f71ddfca3e0af68402e16297212cb17d';   // 방장(David) 열쇠의 지문 — 열쇠 자체는 코드에 없다
+try { const q = new URLSearchParams(location.search).get('host'); if (q){ localStorage.setItem('hp-mp-hostkey', q); history.replaceState(null, '', location.pathname); } } catch (e) {}
+const mpHostKey = () => { try { return localStorage.getItem('hp-mp-hostkey') || ''; } catch (e) { return ''; } };
+async function mpHostOk(k){ try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(k)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('') === MP_HOST_HASH; } catch (e) { return false; } }   // 테이블은 하나 — 방 이름이 없다
+const MP_PUBLIC = (/github\.io$/.test(location.hostname) || /[?&]mp\b/.test(location.search)) && !mpHostKey();   // 방장 폰은 늘 보던 연습 홀덤으로 연다   // 공개 주소 = 친구 대전 입구(혼자 연습은 claude.ai 쪽) · ?mp 는 로컬 시험용
 if (!MP_PUBLIC && !S.tour && S.seats[0].stack < bbAmt()) askBuyin('칩이 부족합니다. 얼마로 앉을까요?', true);
 window.__he = S;
 /* ---------- 친구 대전 ----------
@@ -3604,6 +3610,10 @@ function mpReq(d){
       i = T.seats.findIndex(p => !p);
       if (i >= 0){ T.seats[i] = {pid:d.pid, name:nm, stack:T.start, inHand:false, hole:[], bet:0, inv:0, folded:false, allin:false, acted:false, label:'', won:0, shown:false}; ch = true; }
     }
+    if (d.hk && T.host !== d.pid) mpHostOk(String(d.hk)).then(ok => {
+      if (!ok || !MP || !MP.dealer || !MP.T || MP.T.host === d.pid || !MP.T.seats.some(p => p && p.pid === d.pid)) return;
+      const t = structuredClone(MP.T); t.host = d.pid; mpCommit(t);
+    });
   } else if (d.type === 'act'){
     if (T.phase === 'play' && d.hand === T.hand && T.seats[T.toAct] && T.seats[T.toAct].pid === d.pid && ['fold', 'check', 'call', 'raise'].includes(d.a)){ mpAct(T, T.toAct, d); ch = true; }
   } else if (d.type === 'start'){
@@ -3645,7 +3655,7 @@ async function mpLease(){
   if (got && !MP.dealer){
     MP.sweepAt = Date.now() + 4000;   // 접속자 목록이 들어올 시간을 두고 한 번 쓸어 낸다
     try { const t = await MP.io.get(); if (t && (!MP.T || t.id !== MP.T.id || t.v >= MP.T.v)) MP.T = structuredClone(t); } catch (e) {}
-    if (!MP.T) MP.T = mpNew(MP.code, MP.pid);
+    if (!MP.T){ MP.T = mpNew(MP.code, MP.pid); MP.T.open = true; }
   }
   MP.dealer = got;
 }
@@ -3656,7 +3666,7 @@ function mpTick(){
   if (!MP.dealer && MP.io.kind === 'sb' && now - (MP.pollAt || 0) > 4000){ MP.pollAt = now; MP.io.get().then(t => t && mpOnState(t), () => {}); }   // 바깥 사이트: 실시간 신호가 빠져도 4초 안에 맞춘다
   if (MP.T) for (const p of MP.T.seats) if (p){ if (here.has(p.pid)) delete MP.gone[p.pid]; else MP.gone[p.pid] = MP.gone[p.pid] || now; }
   if (MP.note && now > MP.note.until){ MP.note = null; mpRender(); }
-  if (MP.T && !MP.T.seats.some(p => p && p.pid === MP.pid) && now - (MP.sitAt || 0) > 2500){ MP.sitAt = now; mpSend('sit', {name:MP.name}); }
+  if (MP.T && !MP.T.seats.some(p => p && p.pid === MP.pid) && now - (MP.sitAt || 0) > 2500){ MP.sitAt = now; mpSend('sit', {name:MP.name, hk:mpHostKey() || undefined}); }
   if (!MP.dealer || !MP.T) return;
   const T = MP.T, gone = mpGone();
   if (here.has(MP.pid)){
@@ -3791,7 +3801,10 @@ async function mpEnter(code){
   if (!io){ mpSay('친구 대전 서버에 연결하지 못했습니다 — 잠시 뒤 다시 눌러 주세요'); return; }
   try {
     const ex = await io.get();
-    if (!ex) await io.set(mpNew(code, mpPid(name)));   // 테이블이 아직 없으면 내가 연다(동시에 둘이 열어도 마지막 것 하나로 모이고, 못 앉은 쪽은 2.5초마다 다시 앉는다)
+    const hostMe = !!mpHostKey() && await mpHostOk(mpHostKey());
+    if (!hostMe && !(ex && ex.open)){ mpSay('아직 테이블이 열리지 않았습니다 — 잠시 뒤 다시 [앉기]'); try { io.leave(); } catch (x) {} return; }
+    if (!ex){ const t = mpNew(code, mpPid(name)); t.open = true; await io.set(t); }   // 방장이 테이블을 연다
+    else if (!ex.open){ const t = structuredClone(ex); t.open = true; t.v = (t.v || 0) + 1; await io.set(t); }
     await io.open(mpReq, t => mpOnState(t), c => { S.coach = {cls:'miss', text:`연결이 끊겼습니다 — ${c}`}; render(); });
   } catch (e){ mpSay(`들어가지 못했습니다 — ${e && (e.code || e.message) || e}${e && e.code === 'invalid_argument' ? ' (공유 권한이 「보기」면 쓸 수 없습니다 — 편집자로 초대받아야 합니다)' : ''}`); try { io.leave(); } catch (x) {} return; }
   mpSay('');
@@ -3804,7 +3817,7 @@ async function mpEnter(code){
   await mpLease();
   if (!MP) return;
   MP.leaseT = setInterval(mpLease, 3000); MP.tickT = setInterval(mpTick, 1000);
-  mpSend('sit', {name}); MP.sitAt = Date.now();
+  mpSend('sit', {name, hk:mpHostKey() || undefined}); MP.sitAt = Date.now();
   if (MP.T) mpRender(); else { S.coach = {cls:'', text:`방 ${code}에 들어가는 중…`}; render(); }
 }
 function mpLeave(){
@@ -3815,7 +3828,7 @@ function mpLeave(){
   MP = null;
   for (const k of Object.keys(S)) if (!(k in m.saved)) delete S[k];   // 친구 대전이 새로 만든 값은 버린다
   for (const k of Object.keys(m.saved)) S[k] = m.saved[k];
-  $('mpOpen').textContent = '테이블에 앉기';
+  $('mpOpen').textContent = mpHostKey() ? '친구 대전 만들기' : '테이블에 앉기';
   S.opt = m.opt; NS = m.ns;
   document.body.classList.remove('mp');
   buildSeatEls(); render();
@@ -3823,7 +3836,7 @@ function mpLeave(){
 }
 function mpOpenSheet(){
   $('mpName').value = mpLS('hp-mp-name') || '';
-  mpSay(''); $('mpSheet').hidden = false; $('tools2').classList.remove('open');
+  mpSay(mpHostKey() ? '이 폰은 방장으로 앉습니다' : ''); $('mpSheet').hidden = false; $('tools2').classList.remove('open');
   if (!$('mpName').value) setTimeout(() => $('mpName').focus(), 60);
 }
 $('mpOpen').onclick = () => { if (MP){ mpLeave(); return; } mpOpenSheet(); };
@@ -3868,7 +3881,9 @@ $('chipX').onclick = () => { if (!MP || !S.wait) return; MP.chipAdd = 0; S.size 
   const el = $('mpProbe'), say = t => { el.textContent = t; };
   say('');   // claude.ai 안이면 그 방, 밖(공개 주소)이면 Supabase — 들어갈 때 고른다
 })();
+if (!mpHostKey()) $('mpOpen').textContent = '테이블에 앉기';
 if (MP_PUBLIC) mpLobby();
+window.__mpDbg = {get:() => MP, commit:t => mpCommit(t)};   // 시험용
 window.__mpt = {mpNew, mpDeal, mpAct, mpFlow, mpFinish, mpOpts};   // 시험용(엔진)
 window.__dbg = {advise, ensureEq, rangeX, opts, newDeck};   // 시험용(조언 장면 검사)
 })();
