@@ -776,7 +776,8 @@ body:not(.mp) #chipRow,body.mp #sizeRow{display:none !important}
 .seat.dealer .dsil .tie{fill:var(--brass);stroke:none}
 .seat.dealer .plate{border-color:var(--brass)}
 .seat.dealer .plate .av{background:var(--brass);color:var(--ink)}
-.seat.dealer .nm{letter-spacing:.12em;font-weight:900;color:var(--brass)}
+.seat.dealer .nm{letter-spacing:.08em;font-weight:900;color:var(--brass);overflow:visible;max-width:none}
+.seat.dealer .pl{max-width:none;overflow:visible}
 .seat.dealer .hole{display:none}
 body:not(.lobby) #mpSolo{display:none}
 body:not(.mp) #mpLink{display:none}
@@ -2719,7 +2720,7 @@ function render(light){
   const me = S.seats[0], s = sbAmt(), b = bbAmt();
   $('bankAmt').textContent = fmt(me.stack);
   const T = S.tour;
-  setHTML($('tnote'), T ? `토너먼트 ${T.round}/${T.rounds}R · ${tourName(T)} · 남은 ${tourAlive().length}명${T.T > 1 ? ` → ${tourStep(T.T).adv}명` : ''}` : `${NS}인 · 블라인드 ${fmt(s)}/${fmt(b)}`);
+  setHTML($('tnote'), T ? `토너먼트 ${T.round}/${T.rounds}R · ${tourName(T)} · 남은 ${tourAlive().length}명${T.T > 1 ? ` → ${tourStep(T.T).adv}명` : ''}` : `${MP && MP.T ? MP.T.ns : LOBBY ? 5 : NS}인 · 블라인드 ${fmt(s)}/${fmt(b)}`);
   setHTML($('blindPill'), `${T ? '' : 'NL '}${fmt(sbAmt())}/${fmt(bbAmt())}`);
   setHTML($('feltRule'), `NO LIMIT · BLINDS ${fmt(s)}/${fmt(b)}`);
   $('bBuy').disabled = S.phase === 'play' || !!VIEW;
