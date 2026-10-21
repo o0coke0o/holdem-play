@@ -587,7 +587,16 @@ body{margin:0}
 .felt.half .oval::after{display:none}
 .felt.half #banner .banner{top:calc(var(--cy) - 82px)}   /* 판 결과는 보드 위(판 중 팟 자리) — 보드 카드를 덮지 않는다 */
 .felt.half .oval svg{display:block;overflow:visible}
-.felt.half .potamt{font-size:14px;padding:5px 16px;background:rgba(4,26,25,.78);border:1px solid rgba(120,210,200,.28);box-shadow:inset 0 1px 4px rgba(0,0,0,.5);color:#eafaf6}
+.felt.half .potamt{background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:2px}
+.felt.half .potamt small{font-size:10.5px;font-weight:800;color:#e6d37a;letter-spacing:.02em;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.felt.half .potamt .pp{display:flex;align-items:center;gap:8px;min-width:118px;justify-content:center;padding:6px 18px;border-radius:999px;background:linear-gradient(#0b3533,#06201f);border:1px solid rgba(140,220,205,.3);box-shadow:inset 0 2px 6px rgba(0,0,0,.6),0 2px 8px rgba(0,0,0,.35);font-size:17px;font-weight:900;color:#f4fbf8;letter-spacing:.01em}
+.felt.half .potamt em{font-style:normal;font-size:9px;font-weight:900;letter-spacing:.08em;padding:2px 5px;border-radius:4px;background:rgba(140,220,205,.22);color:#bfeee5}
+.wcol{position:absolute;bottom:0;width:40px;height:100%}
+.wcol .pc{left:0}
+.pc.drop{animation:chipdrop .32s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes chipdrop{from{translate:0 -34px;opacity:0}to{translate:0 0;opacity:1}}
+.sbet .amt .wonamt{color:#ffd96b;font-weight:900;font-size:12px;text-shadow:0 0 8px rgba(255,200,80,.6),0 1px 2px #000}
+@media (prefers-reduced-motion:reduce){.pc.drop{animation:none}}
 .felt.half .slots > *{border-color:rgba(200,255,245,.22)}
 .felt.half .card.w5 .front{box-shadow:0 0 0 2.5px #f7c948,0 0 16px rgba(247,201,72,.85)}
 .felt.half .seat.win .plate{border-color:#f7c948;box-shadow:0 0 0 1px #f7c948,0 0 18px rgba(247,201,72,.6)}
@@ -1477,6 +1486,12 @@ function sfx(kind, vol = 0.8, delay = 0){
 const TOK = {100:'--chip100', 20:'--chip20', 5:'--chip5', 1:'--chip1'};
 function chipsOf(a){ const out = []; a = Math.round(a); for (const v of [100, 20, 5, 1]) while (a >= v && out.length < 60){ out.push(v); a -= v; } return out; }
 // 실제 칩 단위로 쌓는다($7 = $5 한 개 + $1 두 개) — 칩 사이를 벌려 색이 한 장씩 보이게
+// 판 끝 이긴 사람 앞에 쌓이는 칩 — 칩 값별 기둥, 한 개씩 위에서 떨어진다
+function wonHTML(a){
+  const g = {}; for (const v of chipsOf(a)) g[v] = (g[v] || 0) + 1;
+  const vs = [100, 20, 5, 1].filter(v => g[v]), w = 22, x0 = 9 - (vs.length - 1) * w / 2; let n0 = 0;
+  return vs.map((v, k) => { const n = Math.min(g[v], 8), h = Array.from({length:n}, (_, i) => `<i class="pc drop" style="--c:var(${TOK[v]});bottom:${i * 7}px;z-index:${i};animation-delay:${(n0 + i) * 70}ms"></i>`).join(''); n0 += n; return `<span class="wcol" style="left:${x0 + k * w}px">${h}</span>`; }).join('');
+}
 function stackHTML(a){ return chipsOf(a).slice(0, 10).map((v, i) => `<i class="pc" style="--c:var(${TOK[v]});bottom:${i * 7}px;z-index:${i}"></i>`).join(''); }
 function potHTML(a){
   if (a <= 0) return '';
@@ -1703,7 +1718,8 @@ async function showdown(){
   }
   // 팟 → 이긴 사람
   let t = 0;
-  pays.forEach((a, i) => { if (a > 0) t = Math.max(t, flyChips($('potStack'), $('seat' + i)._plate, a, 0, true)); });
+  const half = $('felt').classList.contains('half');   // 혼자 치기: 칩은 이긴 사람 앞 펠트(베팅 칩 자리)로 날아가 거기 쌓인다
+  pays.forEach((a, i) => { if (a > 0) t = Math.max(t, flyChips($('potStack'), half ? $('seat' + i)._bstack : $('seat' + i)._plate, a, 0, true)); });
   S.potVis = 0; render();
   await sleep(t);
   pays.forEach((a, i) => {
@@ -2770,7 +2786,7 @@ function layoutSeats(){
   // 보드 다섯 칸 · 팟 · 덱도 비켜야 할 자리
   const sl = f.querySelector('.slots').children, s0 = sl[0], s4 = sl[sl.length - 1], so = f.querySelector('.slots');
   boxes.push([s0.offsetLeft - 2, so.offsetTop - 2, s4.offsetLeft + s4.offsetWidth - s0.offsetLeft + 4, s0.offsetHeight + 4]);
-  const pw = f.querySelector('.potwrap'); boxes.push([cx - 92, pw.offsetTop - 4, 184, 42]);   // 팟 칩 기둥 + 「팟 $00」 글씨가 다 서는 폭
+  const pw = f.querySelector('.potwrap'); boxes.push([cx - 92, pw.offsetTop + pw.offsetHeight - 50, 184, 54]);   // 팟은 아래(보드 위)에 붙어 위로 자란다 — 알약 높이까지 비운다   // 팟 칩 기둥 + 「팟 $00」 글씨가 다 서는 폭
   const dk = $('deck'); boxes.push([dk.offsetLeft, dk.offsetTop, dk.offsetWidth + 3, dk.offsetHeight + 3]);
   boxes.push([8, H - 48, 112, 42]);   // 왼쪽 아래 [셔플] 단추 자리(판 중에만 보이지만 늘 비워 둔다)
   const inOval = TB ? (mx, my) => my >= TB.y0 + 8 && my <= TB.y1 - 8 && Math.abs(mx - cx) <= TB.hw(my) - 10
@@ -2858,8 +2874,9 @@ function renderSeat(p, i){
   el._d.hidden = !role;
   if (role && el._d.textContent !== role) el._d.textContent = role;
   syncCards(el._hole, p.hole, c => !(c.revealT && performance.now() >= c.revealT));
-  setHTML(el._bstack, p.bet > 0 ? stackHTML(p.bet) : '');
-  setHTML(el._bamt, p.bet > 0 ? fmt(p.bet) : '');
+  const wonPile = p.bet <= 0 && p.won > 0 && S.phase === 'done' && $('felt').classList.contains('half');
+  setHTML(el._bstack, p.bet > 0 ? stackHTML(p.bet) : wonPile ? wonHTML(p.won) : '');
+  setHTML(el._bamt, p.bet > 0 ? fmt(p.bet) : wonPile ? `<b class="wonamt">+${fmt(p.won)}</b>` : '');
   const lab = p.rebuy ? `<button class="sitbtn" data-rebuy="${esc(p.pid)}">칩 +${fmt(MP.T.start)} 주기</button>` : p.kick && S.phase !== 'play' ? `<button class="sitbtn" data-kick="${esc(p.pid)}">내보내기</button>` : p.me && S.opt.eq && S.phase === 'play' && !p.folded && eqTrack() ? eqTrack() : S.toAct === i && !p.me ? `<span class="t think">${esc(S.think || '생각 중')}</span>` : p.label ? `<span class="t ${p.label.c}">${esc(p.label.t)}</span>` : '';
   setHTML(el._lab, lab);
 }
@@ -2892,7 +2909,7 @@ function render(light){
   aimDeals();
   setHTML($('potStack'), potHTML(S.potVis));
   const pt = potTotal();
-  setHTML($('potAmt'), pt > 0 && S.phase === 'play' ? `팟 ${fmt(pt)}` : '');
+  setHTML($('potAmt'), pt > 0 && S.phase === 'play' ? ($('felt').classList.contains('half') ? `<span class="pp"><em>POT</em>${fmt(pt)}</span>` : `팟 ${fmt(pt)}`) : '');
   const me = S.seats[0], s = sbAmt(), b = bbAmt();
   $('bankAmt').textContent = fmt(me.stack);
   const T = S.tour; document.body.classList.toggle('tourOn', !!T);
