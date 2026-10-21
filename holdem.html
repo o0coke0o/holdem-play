@@ -902,6 +902,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
   .coach{font-size:11px;line-height:1.25;padding-block:3px}
   .chiprow .chip{width:40px;height:40px}
   .chiprow{padding:0}
+  .sdp,.sdp.rb{max-width:calc(100% - 32px)}   /* 결과 줄(이름·카드·족보)이 좁아 글자가 카드 위로 올라가지 않게 */
 }
 </style>
 </head>
@@ -2640,8 +2641,8 @@ function layoutSeats(){
   seatKey = key;
   f.classList.toggle('ns8', NS === 8);   // 8인: 내 카드·보드를 조금 작게
   // 펠트 타원: 폭은 판 전체, 높이는 폭의 0.6 안팎(위·아래 손님 자리를 남긴다)
-  const oh = Math.round(Math.max(W * 0.6, Math.min(W * 0.74, H - 190))), B0 = oh / 2 + 32,
-    cy = Math.round(Math.min(H - B0 - 24, Math.max(H / 2, B0 + 64))), ot = cy - oh / 2;   // 맨 위 자리는 이름표 위로 카드가 서니(약 64px) 그만큼 판을 내린다 — 맨 아래 내 자리가 넘치지 않는 데까지
+  const oh = Math.round(Math.min(Math.max(W * 0.6, Math.min(W * 0.74, H - 190)), Math.max(150, H - 172))), B0 = oh / 2 + 32,   // 세로가 짧으면 타원을 낮춘다(맨 위 카드 64 + 맨 아래 꼬리표 44 가 판 안에 들게)
+    cy = Math.round(Math.min(H - B0 - 44, Math.max(H / 2, B0 + 64))), ot = cy - oh / 2;   // 맨 위 자리는 이름표 위로 카드가 서니(약 64px) 그만큼 판을 내린다 — 맨 아래 내 자리가 넘치지 않는 데까지
   f.style.setProperty('--cy', cy + 'px'); f.style.setProperty('--ot', ot + 'px'); f.style.setProperty('--oh', oh + 'px');
   // 자리를 잇는 길 = 타원보다 조금 큰 타원(옆은 난간 위, 위·아래는 난간 바깥)
   const cx = W / 2, A = (cx - 42) / (NS === 8 ? Math.cos(Math.PI / 8) : NS === 6 ? Math.sin(Math.PI / 3) : 1), B = oh / 2 + 32;   // 양옆 손님 이름표 가운데가 화면 끝에서 42px
@@ -2752,7 +2753,19 @@ function renderSeat(p, i){
   const lab = p.rebuy ? `<button class="sitbtn" data-rebuy="${esc(p.pid)}">칩 +${fmt(MP.T.start)} 주기</button>` : p.me && S.opt.eq && S.phase === 'play' && !p.folded && eqTrack() ? eqTrack() : S.toAct === i && !p.me ? `<span class="t think">${esc(S.think || '생각 중')}</span>` : p.label ? `<span class="t ${p.label.c}">${esc(p.label.t)}</span>` : '';
   setHTML(el._lab, lab);
 }
+// 결과·복기·받아보기 창 — 보드 위로 자라다 펠트 위로 넘치면 펠트 윗변 안쪽에 붙이고, 그래도 길면 그 안에서 스크롤
+function fitSdp(){
+  const p = document.querySelector('#banner .sdp'); if (!p) return;
+  p.style.top = ''; p.style.bottom = ''; p.style.maxHeight = ''; p.style.overflowY = '';
+  const f = $('felt').getBoundingClientRect(), r = p.getBoundingClientRect(), lim = f.top + 4;
+  if (r.top >= lim) return;
+  const o = (p.offsetParent || $('felt')).getBoundingClientRect();
+  p.style.bottom = 'auto'; p.style.top = Math.round(lim - o.top) + 'px';
+  const room = Math.floor(f.bottom - lim - 8); if (r.height > room){ p.style.maxHeight = room + 'px'; p.style.overflowY = 'auto'; }
+}
+let fitQ = 0;
 function render(light){
+  if (!fitQ){ fitQ = requestAnimationFrame(() => { fitQ = 0; fitSdp(); }); }
   S.seats.forEach(renderSeat);
   $('felt').classList.toggle('live', S.phase === 'play');
   $('rvPrev').disabled = !(S.hist && S.hist.length);
