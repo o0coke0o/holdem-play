@@ -2923,7 +2923,8 @@ function renderBanner(){
   // ✕ 로 닫은 복기·쇼다운 상자 — 테이블을 누르면 다시 연다
   if (S.rvHide && S.phase === 'done' && (rv || sd || S.rab)){ $('felt').classList.toggle('sd', false); $('felt').classList.toggle('done', true); $('felt').classList.toggle('peek', !!S.peek); setHTML($('banner'), ''); return; }
   if (S.rab && S.phase === 'done'){ $('felt').classList.toggle('sd', true); $('felt').classList.toggle('done', true); $('felt').classList.toggle('peek', !!S.peek); setHTML($('banner'), rabbitHTML()); return; }
-  if (rv && !sd){
+  // 복기 상자는 그리지 않는다 — 글은 조언 칸과 같고 패는 자리마다 펼쳐진다 · 해설은 조언 칸을 누르면 열린다
+  if (false && rv && !sd){
     $('felt').classList.toggle('sd', true); $('felt').classList.toggle('done', S.phase === 'done'); $('felt').classList.toggle('peek', !!S.peek);
     const rows = rv.rows.map(([q, txt, fin, won]) => `<div class="sdr on${won ? ' win' : ''}"><b>${esc(q.name)}</b>${q.hole.map(c => miniC(c, true)).join('')}<span class="hn">${esc(txt)}${fin ? `<small>최종 ${esc(fin)}${q.me && q.folded ? ' (폴드)' : ''}</small>` : ''}</span>${won ? '<i>승</i>' : ''}</div>`).join('');
     setHTML($('banner'), `<div class="sdp"><button class="sdx" id="rvX" title="복기 닫기 — 테이블을 누르면 다시 열림">✕</button><div class="sdh even">복기<span>${rv.bl ? ['', '', '', '플롭', '턴', '리버'][rv.bl] + '에서' : '프리플롭에서'} 내 결정</span></div>${rows}<div class="sdv">${esc(rv.why)}</div>${S.explain && S.phase === 'done' ? '<button class="sdmore" id="exBtn">이 판 해설 보기 ▸</button>' : ''}</div>`);
