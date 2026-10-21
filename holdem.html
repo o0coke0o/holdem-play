@@ -866,6 +866,18 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
   .eqrow .ec b{font-size:12px}
   .plate .nm small{display:none}
 }
+/* 세로가 짧은 폰(주소창·아래 막대가 있는 브라우저) — 단추·내 카드·레일을 줄여 남는 높이를 게임판에 준다 */
+@media (max-width:520px) and (max-height:820px){
+  .app{gap:4px}
+  .seat[data-pos="0"]{--cw:clamp(40px,11.5vw,50px)}
+  .b{padding:7px 4px 5px;font-size:12.5px}
+  .b kbd{font-size:8.5px}
+  .rail{padding:6px 8px;gap:5px}
+  .bankline{padding-bottom:4px;margin-bottom:0}
+  .coach{font-size:11px;line-height:1.25;padding-block:3px}
+  .chiprow .chip{width:40px;height:40px}
+  .chiprow{padding:0}
+}
 </style>
 </head>
 <body>
