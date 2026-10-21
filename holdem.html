@@ -2660,8 +2660,8 @@ function layoutSeats(){
   seatKey = key;
   f.classList.toggle('ns8', NS === 8);   // 8인: 내 카드·보드를 조금 작게
   // 펠트 타원: 폭은 판 전체, 높이는 폭의 0.6 안팎(위·아래 손님 자리를 남긴다)
-  const oh = Math.round(Math.min(Math.max(W * 0.6, Math.min(W * 0.74, H - 190)), Math.max(150, H - 172))), B0 = oh / 2 + 32,   // 세로가 짧으면 타원을 낮춘다(맨 위 카드 64 + 맨 아래 꼬리표 44 가 판 안에 들게)
-    cy = Math.round(Math.min(H - B0 - 44, Math.max(H / 2, B0 + 64))), ot = cy - oh / 2;   // 맨 위 자리는 이름표 위로 카드가 서니(약 64px) 그만큼 판을 내린다 — 맨 아래 내 자리가 넘치지 않는 데까지
+  const oh = Math.round(Math.max(W * 0.6, Math.min(W * 0.74, H - 190))), B0 = oh / 2 + 32,   // 타원은 줄이지 않는다(칩·보드가 펠트 위에 서야 한다)
+    cy = Math.round(Math.min(H - B0 - 30, Math.max(H / 2, B0 + 64))), ot = cy - oh / 2;   // 맨 위 자리 카드(64)가 판 안에 들게 내리되 맨 아래 내 자리가 넘치지 않는 데까지   // 맨 위 자리는 이름표 위로 카드가 서니(약 64px) 그만큼 판을 내린다 — 맨 아래 내 자리가 넘치지 않는 데까지
   f.style.setProperty('--cy', cy + 'px'); f.style.setProperty('--ot', ot + 'px'); f.style.setProperty('--oh', oh + 'px');
   // 자리를 잇는 길 = 타원보다 조금 큰 타원(옆은 난간 위, 위·아래는 난간 바깥)
   const cx = W / 2, A = (cx - 42) / (NS === 8 ? Math.cos(Math.PI / 8) : NS === 6 ? Math.sin(Math.PI / 3) : 1), B = oh / 2 + 32;   // 양옆 손님 이름표 가운데가 화면 끝에서 42px
