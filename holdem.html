@@ -765,6 +765,22 @@ body.mp .btns.post{grid-template-columns:1fr 1.6fr}
 body.mp .seat .lab .sitbtn{font-size:11px}
 body.lobby #postRow,body.lobby #mpClose{display:none !important}
 .coachwrap.blank{visibility:hidden}
+#mpEnd{display:none}
+body.mp:not(.mphost) #tools2 #mpEnd{display:none}
+body.mp #tools2{width:min(260px,80vw);gap:8px;padding:12px}
+body.mp #tools2 .mprow{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:0}
+body.mp #tools2 .mprow > span{display:none}
+body.mp #tools2 .tool{display:block;width:100%;box-sizing:border-box;text-align:center;padding:12px 14px;border-radius:12px;font:800 14px var(--ui);letter-spacing:.02em;color:var(--ivory);background:rgba(0,0,0,.35);border:1px solid var(--brass-soft)}
+body.mp #tools2 #mpLink{order:-1;color:#1a1108;background:linear-gradient(#f0d37e,#c9a24a 55%,#a47c2a);border:0}
+body.mp #tools2 #mpEnd{color:#ff9b8f;border-color:rgba(194,59,50,.65);background:rgba(60,12,10,.35)}
+#mpBotSheet{align-items:flex-start;background:rgba(0,0,0,.35)}
+#mpBotSheet .panel{width:min(320px,calc(100% - 32px));margin-top:calc(env(safe-area-inset-top,0px) + 56px);border-radius:16px;border:1px solid var(--brass);padding:16px;text-align:center}
+#mpBotSheet h2{margin:0 0 12px;font:800 18px var(--display);color:var(--brass)}
+#mpBotList{display:flex;flex-direction:column;gap:8px}
+#mpBotList button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--brass-soft);background:rgba(0,0,0,.35);color:var(--ivory);font:800 14px var(--ui);cursor:pointer;text-align:left}
+#mpBotList button i{width:22px;height:22px;border-radius:50%;background:var(--ac);flex:none}
+#mpBotList button small{margin-left:auto;color:var(--muted);font-weight:700;font-size:12px}
+#mpBotClose{margin-top:12px}
 #mpSheet{align-items:flex-start;background:rgba(0,0,0,.35)}
 #mpSheet .panel{width:min(340px,calc(100% - 32px));margin-top:calc(env(safe-area-inset-top,0px) + 56px);border-radius:16px;border-bottom:1px solid var(--brass-soft);padding:16px 16px 12px}
 body:not(.mp) #chipRow,body.mp #sizeRow{display:none !important}
@@ -926,7 +942,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
     <button class="tool" id="tReset">테이블 리셋</button>
     <div class="nsrow tourrow"><span>토너먼트</span><button class="tool" data-tour="4">4테이블</button><button class="tool" data-tour="8">8테이블</button><button class="tool" data-tour="16">16테이블</button></div>
     <button class="tool" id="tTourQuit" hidden>지금 순위로 마치기</button>
-    <div class="nsrow mprow"><span>친구 대전</span><button class="tool" id="mpOpen">친구 대전 만들기</button><button class="tool" id="mpLink">주소 보내기</button><span id="mpProbe" style="font-size:11px;color:var(--muted)">연결 확인 중…</span></div>
+    <div class="nsrow mprow"><span>친구 대전</span><button class="tool" id="mpOpen">친구 대전 만들기</button><button class="tool" id="mpLink">주소 보내기</button><button class="tool" id="mpEnd">게임 종료</button><span id="mpProbe" style="font-size:11px;color:var(--muted)">연결 확인 중…</span></div>
     <div class="nsrow"><span>인원</span><button class="tool" data-ns="4">4인</button><button class="tool" data-ns="6">6인</button><button class="tool" data-ns="8">8인</button></div>
   </div>
 
@@ -1021,6 +1037,9 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
   </div>
 </div>
 
+<div class="sheet" id="mpBotSheet" hidden>
+  <div class="panel" role="dialog" aria-label="손님 앉히기"><h2>손님 앉히기</h2><div id="mpBotList"></div><button class="tool" id="mpBotClose">닫기</button></div>
+</div>
 <div class="sheet" id="mpSheet" hidden>
   <div class="panel entry" role="dialog" aria-label="참가 등록">
     <button class="tool" id="mpClose">닫기</button>
@@ -2727,7 +2746,7 @@ function renderSeat(p, i){
     el._plate.style.setProperty('--ac', p.ac);
     setHTML(el._av, '+'); setHTML(el._nm, '빈 자리'); setHTML(el._stk, '');
     el._d.hidden = true; syncCards(el._hole, [], true); setHTML(el._bstack, ''); setHTML(el._bamt, '');
-    setHTML(el._lab, MP || LOBBY ? '' : S.tour ? '<span class="t fold">탈락</span>' : S.phase === 'play' ? '<span class="t fold">핸드 끝나면 앉힐 수 있음</span>' : `<button class="sitbtn" data-sit="${i}">손님 앉히기</button>`);
+    setHTML(el._lab, MP ? (MP.T && MP.T.host === MP.pid && p.tIdx != null ? `<button class="sitbtn" data-mpsit="${p.tIdx}">손님 앉히기</button>` : '') : LOBBY ? '' : S.tour ? '<span class="t fold">탈락</span>' : S.phase === 'play' ? '<span class="t fold">핸드 끝나면 앉힐 수 있음</span>' : `<button class="sitbtn" data-sit="${i}">손님 앉히기</button>`);
     return;
   }
   const cls = ['seat'];
@@ -2750,7 +2769,7 @@ function renderSeat(p, i){
   syncCards(el._hole, p.hole, c => !(c.revealT && performance.now() >= c.revealT));
   setHTML(el._bstack, p.bet > 0 ? stackHTML(p.bet) : '');
   setHTML(el._bamt, p.bet > 0 ? fmt(p.bet) : '');
-  const lab = p.rebuy ? `<button class="sitbtn" data-rebuy="${esc(p.pid)}">칩 +${fmt(MP.T.start)} 주기</button>` : p.me && S.opt.eq && S.phase === 'play' && !p.folded && eqTrack() ? eqTrack() : S.toAct === i && !p.me ? `<span class="t think">${esc(S.think || '생각 중')}</span>` : p.label ? `<span class="t ${p.label.c}">${esc(p.label.t)}</span>` : '';
+  const lab = p.rebuy ? `<button class="sitbtn" data-rebuy="${esc(p.pid)}">칩 +${fmt(MP.T.start)} 주기</button>` : p.kick && S.phase !== 'play' ? `<button class="sitbtn" data-kick="${esc(p.pid)}">내보내기</button>` : p.me && S.opt.eq && S.phase === 'play' && !p.folded && eqTrack() ? eqTrack() : S.toAct === i && !p.me ? `<span class="t think">${esc(S.think || '생각 중')}</span>` : p.label ? `<span class="t ${p.label.c}">${esc(p.label.t)}</span>` : '';
   setHTML(el._lab, lab);
 }
 // 결과·복기·받아보기 창 — 보드 위로 자라다 펠트 위로 넘치면 펠트 윗변 안쪽에 붙이고, 그래도 길면 그 안에서 스크롤
@@ -3463,7 +3482,8 @@ ${rk(topPct(q.hole[0], q.hole[1]))}`, c:best ? 'best' : q.folded ? 'fold' : 'han
 $('felt').addEventListener('click', e => {
   if (e.target.closest('#exBtn')){ openExplain(); return; }
   if (e.target.closest('#rvX')){ S.rvHide = true; render(); return; }
-  if (MP){ const rb = e.target.closest('[data-rebuy]'); if (rb) mpSend('rebuy', {who:rb.dataset.rebuy}); return; }
+  if (MP){ const rb = e.target.closest('[data-rebuy]'), kb = e.target.closest('[data-kick]'), sb = e.target.closest('[data-mpsit]');
+    if (rb) mpSend('rebuy', {who:rb.dataset.rebuy}); else if (kb) mpSend('kick', {who:kb.dataset.kick}); else if (sb) mpBotPick(+sb.dataset.mpsit); return; }
   if (LOBBY) return;
   { const ce = e.target.closest('#board .card.rab'); if (ce && S.rab && S.rab.steps.length){ const last = S.rab.steps[S.rab.steps.length - 1].got; if (last.some(c => cardEls.get(c.id) === ce)){ rabbitUndo(); return; } } }
   if ((S.review || S.sd) && S.rvHide && S.phase === 'done' && !e.target.closest('.plate, .sitbtn')){ S.rvHide = false; render(); return; }
@@ -3579,7 +3599,7 @@ function mpDeal(T, gone){
   for (let r = 0; r < 2; r++){ let j = T.sbI; for (let k = 0; k < el.length; k++){ T.seats[j].hole.push(T.deck.pop()); j = mpNext(T, j, q => q.inHand); } }
   T.street = 'pre'; T.phase = 'play';
   mpPut(T.seats[T.sbI], T.sb); mpPut(T.seats[T.bbI], T.bb);
-  T.curBet = T.bb; T.minRaise = T.bb;
+  T.curBet = T.bb; T.minRaise = T.bb; T.raises = 0; T.pfrIdx = -1;
   T.toAct = mpNext(T, T.bbI, q => q.inHand && !q.allin);
   if (T.toAct < 0 || T.seats.filter(q => q && q.inHand && !q.allin).length < 2 && T.seats[T.toAct].bet >= T.curBet) mpFlow(T, T.bbI);
 }
@@ -3594,6 +3614,7 @@ function mpAct(T, i, d){
     if (by >= T.minRaise){ T.minRaise = by; for (const q of T.seats) if (q && q !== p) q.acted = false; }
     else for (const q of T.seats) if (q && q !== p && q.bet < to) q.acted = false;
     T.curBet = to; p.label = p.allin ? '올인' : was ? '레이즈' : '베팅';
+    T.raises = (T.raises || 0) + 1; if (T.street === 'pre') T.pfrIdx = i;
   }
   p.acted = true;
   mpFlow(T, i);
@@ -3605,7 +3626,7 @@ function mpFlow(T, from){
   const done = !actors.length || actors.every(p => p.acted && p.bet === T.curBet) || (actors.length === 1 && actors[0].bet >= T.curBet);
   if (!done){ T.toAct = mpNext(T, from, p => p.inHand && !p.folded && !p.allin && !(p.acted && p.bet === T.curBet)); return; }
   for (const p of T.seats) if (p){ T.pot += p.bet; p.bet = 0; p.acted = false; if (p.inHand && !p.folded && !p.allin) p.label = ''; }
-  T.curBet = 0; T.minRaise = T.bb;
+  T.curBet = 0; T.minRaise = T.bb; T.raises = 0;
   if (T.street === 'river') return mpFinish(T);
   const n = T.street === 'pre' ? 3 : 1; T.deck.pop();
   for (let k = 0; k < n; k++) T.board.push(T.deck.pop());
@@ -3639,7 +3660,19 @@ function mpSend(type, data){
   if (!MP || !MP.io) return;
   Promise.resolve(MP.io.emit(Object.assign({type, pid:MP.pid, hand:MP.T ? MP.T.hand : 0}, data || {}))).catch(e => { S.coach = {cls:'miss', text:`보내지 못했습니다 — ${e && e.code || e}`}; render(); });
 }
-function mpGone(){ const now = Date.now(); return p => MP.gone[p.pid] && now - MP.gone[p.pid] > 10000; }
+function mpGone(){ const now = Date.now(); return p => !p.bot && MP.gone[p.pid] && now - MP.gone[p.pid] > 10000; }
+// 캐릭터 판단 — 친구 대전 판(T)을 연습판 모양(S)으로 잠깐 옮겨 연습판의 botDecide 를 그대로 부르고 되돌린다(진짜 카드로)
+function mpBotDecide(T, i){
+  const keys = ['seats', 'board', 'street', 'curBet', 'minRaise', 'raises', 'pfrIdx', 'lastAgg', 'btn', 'pot', 'phase'], keep = {}, ns0 = NS;
+  for (const k of keys) keep[k] = S[k];
+  try {
+    NS = T.ns;
+    S.seats = T.seats.map(p => { if (!p) return emptySeat(); const b = POOL.find(x => x.name === p.name) || {name:p.name, tag:'', ac:'#888'};
+      return Object.assign(mkSeat(b, p.stack), {bet:p.bet, inv:p.inv, hole:p.hole, folded:!p.inHand || p.folded, allin:p.allin, acted:p.acted}); });
+    Object.assign(S, {board:T.board, street:T.street, curBet:T.curBet, minRaise:T.minRaise, raises:T.raises || 0, pfrIdx:T.pfrIdx == null ? -1 : T.pfrIdx, lastAgg:-1, btn:T.btn, pot:T.pot, phase:'play'});
+    const d = botDecide(i); return {a:d.a, to:d.to};
+  } finally { NS = ns0; Object.assign(S, keep); }
+}
 function mpReq(d){
   if (!MP || !MP.dealer || !MP.T) return;
   if (!d || typeof d !== 'object' || !d.pid) return;
@@ -3654,7 +3687,7 @@ function mpReq(d){
     }
     if (d.hk && T.host !== d.pid) mpHostOk(String(d.hk)).then(ok => {
       if (!ok || !MP || !MP.dealer || !MP.T || MP.T.host === d.pid || !MP.T.seats.some(p => p && p.pid === d.pid)) return;
-      const t = structuredClone(MP.T); t.host = d.pid; mpCommit(t);
+      const t = structuredClone(MP.T); t.host = d.pid; t.hostV = true; mpCommit(t);
     });
   } else if (d.type === 'act'){
     if (T.phase === 'play' && d.hand === T.hand && T.seats[T.toAct] && T.seats[T.toAct].pid === d.pid && ['fold', 'check', 'call', 'raise'].includes(d.a)){ mpAct(T, T.toAct, d); ch = true; }
@@ -3666,6 +3699,16 @@ function mpReq(d){
   } else if (d.type === 'leave'){
     const i = T.seats.findIndex(p => p && p.pid === d.pid);
     if (i >= 0){ mpDrop(T, i); ch = true; }
+  } else if (d.type === 'bot'){
+    const b = POOL.find(x => x.name === d.name), at = d.at | 0;
+    if (d.pid === T.host && b && at >= 0 && at < T.ns && !T.seats[at] && !T.seats.some(q => q && q.name === b.name)){
+      T.seats[at] = {pid:'bot-' + b.name, name:b.name, bot:true, stack:T.start, inHand:false, hole:[], bet:0, inv:0, folded:false, allin:false, acted:false, label:'', won:0, shown:false}; ch = true;
+    }
+  } else if (d.type === 'kick'){
+    const i = T.seats.findIndex(q => q && q.pid === d.who && q.bot);
+    if (d.pid === T.host && i >= 0){ mpDrop(T, i); ch = true; }
+  } else if (d.type === 'end'){
+    if (d.pid === T.host){ const t = mpNew(T.code, T.host); t.open = false; t.ended = Date.now(); for (const k of Object.keys(T)) delete T[k]; Object.assign(T, t); ch = true; }
   }
   if (ch) mpCommit(T);
 }
@@ -3706,16 +3749,28 @@ function mpTick(){
   if (!MP) return;
   const now = Date.now(), here = new Set(MP.io.peers().map(q => q && q.pid).filter(Boolean));
   if (!MP.dealer && MP.io.kind === 'sb' && now - (MP.pollAt || 0) > 4000){ MP.pollAt = now; MP.io.get().then(t => t && mpOnState(t), () => {}); }   // 바깥 사이트: 실시간 신호가 빠져도 4초 안에 맞춘다
-  if (MP.T) for (const p of MP.T.seats) if (p){ if (here.has(p.pid)) delete MP.gone[p.pid]; else MP.gone[p.pid] = MP.gone[p.pid] || now; }
+  if (MP.T) for (const p of MP.T.seats) if (p){ if (p.bot || here.has(p.pid)) delete MP.gone[p.pid]; else MP.gone[p.pid] = MP.gone[p.pid] || now; }
+  if (now - (MP.lastAt || 0) > 30000){ MP.lastAt = now; mpLS('hp-mp-last', String(now)); }   // 창이 닫혀도 6시간 안에 다시 열면 같은 자리로
+  if (mpHostKey() && MP.T && MP.T.host !== MP.pid && MP.T.seats.some(p => p && p.pid === MP.pid) && now - (MP.hkAt || 0) > 8000){ MP.hkAt = now; mpSend('sit', {name:MP.name, hk:mpHostKey()}); }   // 방장이 돌아오면 다시 방장
   if (MP.note && now > MP.note.until){ MP.note = null; mpRender(); }
   if (MP.T && !MP.T.seats.some(p => p && p.pid === MP.pid) && now - (MP.sitAt || 0) > 2500){ MP.sitAt = now; mpSend('sit', {name:MP.name, hk:mpHostKey() || undefined}); }
   if (!MP.dealer || !MP.T) return;
   const T = MP.T, gone = mpGone();
   if (here.has(MP.pid)){
-    const ghost = (p, i) => p && !here.has(p.pid) && (MP.sweepAt && now > MP.sweepAt || MP.gone[p.pid] && now - MP.gone[p.pid] > 60000);
-    if (T.seats.some(ghost)){ const t = structuredClone(T); t.seats.forEach((p, i) => { if (ghost(p, i)) mpDrop(t, i); }); MP.sweepAt = 0; mpCommit(t); return; }
-    if (MP.sweepAt && now > MP.sweepAt) MP.sweepAt = 0;
-    if (!T.seats.some(p => p && p.pid === T.host && here.has(p.pid))){ const f = T.seats.find(p => p && here.has(p.pid) && !p.leave); if (f){ const t = structuredClone(T); t.host = f.pid; mpCommit(t); return; } }
+    // 자리를 비운 사람(창 최소화·전화·화면 꺼짐)은 「자리 비움」으로 칩 그대로 앉아 있다 — 30분 넘게 안 보일 때만 뺀다
+    const ghost = (p, i) => p && !p.bot && !here.has(p.pid) && MP.gone[p.pid] && now - MP.gone[p.pid] > 30000 && now - (p.seen || 0) > 30 * 60000;
+    if (T.seats.some(ghost)){ const t = structuredClone(T); t.seats.forEach((p, i) => { if (ghost(p, i)) mpDrop(t, i); }); mpCommit(t); return; }
+    if (T.seats.some(p => p && !p.bot && here.has(p.pid) && now - (p.seen || 0) > 60000)){ const t = structuredClone(T); for (const p of t.seats) if (p && here.has(p.pid)) p.seen = now; mpCommit(t); return; }
+    if (!T.hostV && !T.seats.some(p => p && p.pid === T.host && here.has(p.pid))){ const f = T.seats.find(p => p && !p.bot && here.has(p.pid) && !p.leave); if (f){ const t = structuredClone(T); t.host = f.pid; mpCommit(t); return; } }
+  }
+  const ba = T.phase === 'play' && T.seats[T.toAct];
+  if (ba && ba.bot){   // 캐릭터 차례 — 연습판과 같은 성격으로 1~2초 생각하고 둔다
+    const key = T.hand + ':' + T.v;
+    if (MP.botKey !== key){ MP.botKey = key; const at = T.toAct, v = T.v;
+      setTimeout(() => { if (!MP || !MP.dealer || !MP.T || MP.T.v !== v) return; const t = structuredClone(MP.T); let d;
+        try { d = mpBotDecide(t, at); } catch (e) { d = {a:mpOpts(t, at).toCall ? 'fold' : 'check'}; }
+        mpAct(t, at, d); mpCommit(t); }, 900 + Math.random() * 1300); }
+    return;
   }
   if (T.phase === 'play' && T.seats[T.toAct] && gone(T.seats[T.toAct])){ const t = structuredClone(T); mpDrop(t, t.toAct, true); mpCommit(t); return; }
   if (T.phase === 'show' && now - T.showAt > 6000){ const t = structuredClone(T); mpDeal(t, gone); mpCommit(t); return; }
@@ -3725,6 +3780,8 @@ function mpTick(){
 // --- 그리기: 내 자리를 맨 아래(0번)로 돌려 지금 화면에 싣는다 ---
 function mpRender(){
   if (!MP || !MP.T) return;
+  if (MP.T.ended && !MP.T.open){ if (!MP.endT) MP.endT = setTimeout(() => { mpLS('hp-mp-last', '0'); mpLeave(true); if (LOBBY) mpSay('게임이 끝났습니다'); }, 2000); return; }   // 딜러 화면이면 「종료」를 저장·전달할 시간을 두고 일어난다
+  document.body.classList.toggle('mphost', MP.T.host === MP.pid);
   const T = MP.T, n = T.ns, SCR = n === 5 ? [0, 1, 2, 4, 5] : null, NN = SCR ? 6 : n;   // 5자리: 화면 6칸 중 맨 위 가운데(3번)는 딜러
   if (NS !== NN){ NS = NN; buildSeatEls(); }
   let m = T.seats.findIndex(p => p && p.pid === MP.pid); const seated = m >= 0; if (!seated) m = 0;
@@ -3732,15 +3789,16 @@ function mpRender(){
   $('mpOpen').textContent = '테이블에서 일어나기';
   S.seats = SCR ? Array(6).fill(null) : [];
   for (let k = 0; k < n; k++){
-    const j = (m + k) % n, p = T.seats[j], put = x => { if (SCR) S.seats[SCR[k]] = x; else S.seats.push(x); };
+    const j = (m + k) % n, p = T.seats[j], put = x => { x.tIdx = j; if (SCR) S.seats[SCR[k]] = x; else S.seats.push(x); };
     if (!p){ put(emptySeat()); continue; }
     const mine = seated && k === 0;
     const hole = p.inHand ? p.hole.map((c, x) => mine || p.shown ? Object.assign({}, c, {revealT:1}) : {r:'2', s:'s', v:2, id:`${T.hand}-x${j}-${x}`}) : [];
     const lc = /폴드/.test(p.label) ? 'fold' : /올인/.test(p.label) ? 'allin' : /레이즈|베팅/.test(p.label) ? 'raise' : 'call';
-    put(Object.assign(mkSeat({name:p.name, tag:p.pid === T.host ? '방장' : '', ac:MP_COL[j % 8], me:mine}, p.stack),
+    const bp = p.bot && POOL.find(x => x.name === p.name);
+    put(Object.assign(mkSeat({name:p.name, tag:p.pid === T.host ? '방장' : bp ? bp.tag : '', ac:bp ? bp.ac : MP_COL[j % 8], me:mine}, p.stack),
       {bet:p.bet, inv:p.inv, hole, folded:p.inHand ? p.folded : T.phase !== 'wait', allin:p.allin, show:p.shown, won:p.won, pid:p.pid,
        label:p.label ? {t:p.label, c:p.won > 0 ? 'hand' : lc} : away(p) ? {t:'자리 비움', c:'fold'} : (!p.inHand && T.phase === 'play' ? {t:p.stack > 0 ? '다음 판부터' : '칩 없음', c:'fold'} : p.stack <= 0 ? {t:'칩 없음', c:'fold'} : null),
-       rebuy:host && p.stack < T.bb && !(T.phase === 'play' && p.inHand)}));
+       rebuy:host && p.stack < T.bb && !(T.phase === 'play' && p.inHand), kick:host && p.bot && !(T.phase === 'play' && p.inHand)}));
   }
   if (SCR) S.seats[3] = Object.assign(emptySeat(), {dealer:true});
   S.board = T.board.map(c => Object.assign({}, c, {revealT:1}));
@@ -3846,7 +3904,7 @@ async function mpEnter(code){
     const hostMe = !!mpHostKey() && await mpHostOk(mpHostKey());
     if (!hostMe && !(ex && ex.open)){ mpSay('아직 테이블이 열리지 않았습니다 — 잠시 뒤 다시 [앉기]'); try { io.leave(); } catch (x) {} return; }
     if (!ex){ const t = mpNew(code, mpPid(name)); t.open = true; await io.set(t); }   // 방장이 테이블을 연다
-    else if (!ex.open){ const t = structuredClone(ex); t.open = true; t.v = (t.v || 0) + 1; await io.set(t); }
+    else if (!ex.open){ const t = mpNew(code, mpPid(name)); t.open = true; t.v = (ex.v || 0) + 1; await io.set(t); }   // 닫힌(종료된) 테이블이면 새 판으로
     await io.open(mpReq, t => mpOnState(t), c => { S.coach = {cls:'miss', text:`연결이 끊겼습니다 — ${c}`}; render(); });
   } catch (e){ mpSay(`들어가지 못했습니다 — ${e && (e.code || e.message) || e}${e && e.code === 'invalid_argument' ? ' (공유 권한이 「보기」면 쓸 수 없습니다 — 편집자로 초대받아야 합니다)' : ''}`); try { io.leave(); } catch (x) {} return; }
   mpSay('');
@@ -3858,13 +3916,14 @@ async function mpEnter(code){
   io.get().then(t => mpOnState(t), () => {});   // 연결 직후 받은 상태는 MP 가 생기기 전이라 버려졌다 — 한 번 더 읽는다
   await mpLease();
   if (!MP) return;
-  MP.leaseT = setInterval(mpLease, 3000); MP.tickT = setInterval(mpTick, 1000);
+  MP.leaseT = setInterval(mpLease, 3000); MP.tickT = setInterval(mpTick, 1000); mpLS('hp-mp-last', String(Date.now()));
   mpSend('sit', {name, hk:mpHostKey() || undefined}); MP.sitAt = Date.now();
   if (MP.T) mpRender(); else { S.coach = {cls:'', text:`방 ${code}에 들어가는 중…`}; render(); }
 }
-function mpLeave(){
+function mpLeave(quiet){
   if (!MP) return;
-  const m = MP; mpSend('leave');
+  const m = MP; if (!quiet){ mpSend('leave'); mpLS('hp-mp-last', '0'); }
+  document.body.classList.remove('mphost');
   clearInterval(m.leaseT); clearInterval(m.tickT);
   setTimeout(() => { try { m.io.leave(); } catch (e) {} }, 400);
   MP = null;
@@ -3935,6 +3994,30 @@ $('chipX').onclick = () => { if (!MP || !S.wait) return; MP.chipAdd = 0; S.size 
 })();
 if (!mpHostKey()) $('mpOpen').textContent = '테이블에 앉기';
 if (MP_PUBLIC) mpLobby();
+{ const last = +mpLS('hp-mp-last') || 0, nm = mpLS('hp-mp-name'); if (nm && Date.now() - last < 6 * 3600e3) setTimeout(() => { if (MP) return; $('mpName').value = nm; mpEnter(MP_ROOM); }, 400); }
+function mpBotPick(at){
+  if (!MP || !MP.T || MP.T.host !== MP.pid) return;
+  const used = new Set(MP.T.seats.filter(Boolean).map(p => p.name)), free = POOL.filter(b => !used.has(b.name));
+  $('mpBotList').innerHTML = free.map(b => `<button data-bn="${esc(b.name)}" style="--ac:${b.ac}"><i></i>${esc(b.name)}<small>${esc(b.tag)}</small></button>`).join('') || '<p class="empty">앉힐 손님이 없습니다</p>';
+  $('mpBotSheet').dataset.at = at; $('mpBotSheet').hidden = false; $('tools2').classList.remove('open');
+}
+$('mpBotList').addEventListener('click', e => { const b = e.target.closest('[data-bn]'); if (!b || !MP) return; mpSend('bot', {name:b.dataset.bn, at:+$('mpBotSheet').dataset.at}); $('mpBotSheet').hidden = true; });
+$('mpBotClose').onclick = () => { $('mpBotSheet').hidden = true; };
+$('mpBotSheet').addEventListener('click', e => { if (e.target.id === 'mpBotSheet') $('mpBotSheet').hidden = true; });
+// 게임 종료(방장) — 두 번 눌러야 끝난다. 테이블이 닫히고 모두 일어난다 · 다음 [친구 대전 만들기]는 새 판
+$('mpEnd').onclick = () => {
+  const b = $('mpEnd'); if (!MP || !MP.T || MP.T.host !== MP.pid) return;
+  if (!b.dataset.arm){ b.dataset.arm = '1'; b.textContent = '한 번 더 누르면 종료'; setTimeout(() => { delete b.dataset.arm; b.textContent = '게임 종료'; }, 4000); return; }
+  delete b.dataset.arm; b.textContent = '게임 종료'; $('tools2').classList.remove('open');
+  mpSend('end'); mpLS('hp-mp-last', '0'); setTimeout(() => { if (MP) mpLeave(true); }, 3500);
+};
+// 화면이 다시 켜지면(최소화·전화 뒤) 접속을 알리고 판을 다시 받는다
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !MP) return;
+  Promise.resolve(MP.io.presence({pid:MP.pid, name:MP.name})).catch(() => {});
+  MP.io.get().then(t => t && mpOnState(t), () => {});
+  mpSend('sit', {name:MP.name, hk:mpHostKey() || undefined});
+});
 window.__mpDbg = {get:() => MP, commit:t => mpCommit(t)};   // 시험용
 window.__mpt = {mpNew, mpDeal, mpAct, mpFlow, mpFinish, mpOpts};   // 시험용(엔진)
 window.__dbg = {advise, ensureEq, rangeX, opts, newDeck};   // 시험용(조언 장면 검사)
