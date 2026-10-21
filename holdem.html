@@ -761,6 +761,10 @@ body.mp .below,body.mp #eqRow,body.mp #bBuy,body.mp #bRab,body.mp .shuf,body.mp 
 body.mp #tools2 > :not(.mprow):not(#tSound){display:none !important}
 body.mp .btns.post{grid-template-columns:1fr 1.6fr}
 body.mp .seat .lab .sitbtn{font-size:11px}
+body.lobby #postRow,body.lobby #mpClose{display:none !important}
+body:not(.lobby) #mpSolo{display:none}
+body:not(.mp) #mpLink{display:none}
+#mpSolo{background:none;border:0;color:var(--muted);font-size:12px;text-decoration:underline;padding:6px 0;margin-top:6px;cursor:pointer}
 .sdp.rb{gap:1px;max-width:calc(100% - 40px)}
 .sdp.rb .sdr{min-height:23px;padding-block:0}
 .sdp.rb .sdv{font-size:11px;line-height:1.3}
@@ -865,7 +869,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
     <button class="tool" id="tReset">테이블 리셋</button>
     <div class="nsrow tourrow"><span>토너먼트</span><button class="tool" data-tour="4">4테이블</button><button class="tool" data-tour="8">8테이블</button><button class="tool" data-tour="16">16테이블</button></div>
     <button class="tool" id="tTourQuit" hidden>지금 순위로 마치기</button>
-    <div class="nsrow mprow"><span>친구 대전</span><button class="tool" id="mpOpen">방 만들기 · 들어가기</button><span id="mpProbe" style="font-size:11px;color:var(--muted)">연결 확인 중…</span></div>
+    <div class="nsrow mprow"><span>친구 대전</span><button class="tool" id="mpOpen">방 만들기 · 들어가기</button><button class="tool" id="mpLink">초대 링크 보내기</button><span id="mpProbe" style="font-size:11px;color:var(--muted)">연결 확인 중…</span></div>
     <div class="nsrow"><span>인원</span><button class="tool" data-ns="4">4인</button><button class="tool" data-ns="6">6인</button><button class="tool" data-ns="8">8인</button></div>
   </div>
 
@@ -967,6 +971,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
     <label class="mpf">방 이름 <small>영문·숫자 — 친구에게 알려 줄 이름</small><input id="mpCode" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
     <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px"><button class="tool" id="mpJoin">들어가기</button><button class="tool" id="mpCreate" aria-pressed="true">새 방 만들기</button></div>
     <p class="empty" id="mpMsg" style="margin:8px 0 0"></p>
+    <div style="text-align:center"><button id="mpSolo">혼자 연습하기</button></div>
   </div>
 </div>
 
@@ -1089,6 +1094,7 @@ function mkSeat(st, stack){
 // 지갑 — 블랙잭과 같은 칩. 블랙잭의 지금 모드(실전/표 연습) 기록의 bank 를 읽고 쓴다.
 // 홀덤은 달러 단위로만 걸므로 센트($0.50 등)는 따로 들고 있다가 그대로 돌려놓는다
 let MP = null;   // 친구 대전 중이면 그 상태(아래 「친구 대전」)
+let LOBBY = null;   // 공개 주소 입구(빈 테이블 + 이름·방 창)에 있으면 혼자 판의 자리를 맡아 둔다
 const WKEY = () => 'bj-practice-usd-real';
 // 다시 받기: 지갑이 $2(가장 낮은 빅 블라인드) 밑으로 떨어졌을 때만 $100 — 블랙잭과 같은 규칙 · 이 값 말고는 칩이 생기는 길이 없다
 const REFILL = 100, BROKE = 100;   // 지갑이 $100 밑이면 $100으로 다시 채운다(더하는 것이 아니라 채운다)
@@ -1477,6 +1483,7 @@ async function revealAll(){
 }
 async function startHand(){
   if (MP){ mpSend('start'); return; }
+  if (LOBBY) return;
   if (VIEW) return;
   if (S.phase === 'play') return;
   if (S.tour && (S.tour.done || S.tour.pendingAdv)){ openTourGate(); return; }
@@ -2649,7 +2656,7 @@ function renderSeat(p, i){
     el._plate.style.setProperty('--ac', p.ac);
     setHTML(el._av, '+'); setHTML(el._nm, '빈 자리'); setHTML(el._stk, '');
     el._d.hidden = true; syncCards(el._hole, [], true); setHTML(el._bstack, ''); setHTML(el._bamt, '');
-    setHTML(el._lab, MP ? '' : S.tour ? '<span class="t fold">탈락</span>' : S.phase === 'play' ? '<span class="t fold">핸드 끝나면 앉힐 수 있음</span>' : `<button class="sitbtn" data-sit="${i}">손님 앉히기</button>`);
+    setHTML(el._lab, MP || LOBBY ? '' : S.tour ? '<span class="t fold">탈락</span>' : S.phase === 'play' ? '<span class="t fold">핸드 끝나면 앉힐 수 있음</span>' : `<button class="sitbtn" data-sit="${i}">손님 앉히기</button>`);
     return;
   }
   const cls = ['seat'];
@@ -3371,6 +3378,7 @@ $('felt').addEventListener('click', e => {
   if (e.target.closest('#exBtn')){ openExplain(); return; }
   if (e.target.closest('#rvX')){ S.rvHide = true; render(); return; }
   if (MP){ const rb = e.target.closest('[data-rebuy]'); if (rb) mpSend('rebuy', {who:rb.dataset.rebuy}); return; }
+  if (LOBBY) return;
   { const ce = e.target.closest('#board .card.rab'); if (ce && S.rab && S.rab.steps.length){ const last = S.rab.steps[S.rab.steps.length - 1].got; if (last.some(c => cardEls.get(c.id) === ce)){ rabbitUndo(); return; } } }
   if ((S.review || S.sd) && S.rvHide && S.phase === 'done' && !e.target.closest('.plate, .sitbtn')){ S.rvHide = false; render(); return; }
   if (VIEW) return;
@@ -3417,7 +3425,7 @@ $('sReset').onclick = () => { S.stats = {hands:0, won:0, net:0, best:0, vpip:0, 
 
 document.addEventListener('keydown', e => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
-  for (const id of ['mpSheet', 'tableSheet', 'lastSheet', 'sheet', 'profSheet', 'quitSheet', 'tourJoin', 'tourStat', 'tourGate', 'exSheet']) if (!$(id).hidden){ if (e.key === 'Escape') $(id).hidden = true; else if (id === 'tourGate' && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); $('tgGo').click(); } return; }
+  for (const id of ['mpSheet', 'tableSheet', 'lastSheet', 'sheet', 'profSheet', 'quitSheet', 'tourJoin', 'tourStat', 'tourGate', 'exSheet']) if (!$(id).hidden){ if (e.key === 'Escape'){ if (!(id === 'mpSheet' && LOBBY && !MP)) $(id).hidden = true; } else if (id === 'tourGate' && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); $('tgGo').click(); } return; }
   if (!$('buyin').hidden){ if (e.key === 'Escape' && !$('buyCancel').hidden) $('buyin').hidden = true; return; }
   if (VIEW){ e.preventDefault(); if (e.key === 'ArrowLeft') $('vPrev').click(); else if (e.key === 'ArrowRight') viewNewer(); else if (e.key.toLowerCase() === 'l') $('vLog').click(); else if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') exitView(); return; }
   const k = e.key.toLowerCase();
@@ -3441,7 +3449,9 @@ try {
 } catch (e) { S.tour = null; }
 { const fit = () => document.documentElement.style.setProperty('--appH', window.innerHeight + 'px'); fit(); addEventListener('resize', fit); if (window.visualViewport) visualViewport.addEventListener('resize', fit); }
 buildChart(); renderLeak(); buildSeatEls(); syncOpt(); syncNS(); syncTour(); render();
-if (!S.tour && S.seats[0].stack < bbAmt()) askBuyin('칩이 부족합니다. 얼마로 앉을까요?', true);
+const MP_INVITE = (() => { try { const q = (new URLSearchParams(location.search).get('room') || '').toLowerCase(); return /^[a-z0-9][a-z0-9-]{0,15}$/.test(q) ? q : ''; } catch (e) { return ''; } })();
+const MP_PUBLIC = !!MP_INVITE || /github\.io$/.test(location.hostname);   // 공개 주소 = 친구 대전 입구(혼자 연습은 claude.ai 쪽)
+if (!MP_PUBLIC && !S.tour && S.seats[0].stack < bbAmt()) askBuyin('칩이 부족합니다. 얼마로 앉을까요?', true);
 window.__he = S;
 /* ---------- 친구 대전 ----------
    한 판의 상태(T)는 공용 저장소 mp/<방> 문서 하나다 — 늦게 온 사람도 그것을 읽고 그린다.
@@ -3602,6 +3612,7 @@ function mpTick(){
   const now = Date.now(), here = new Set(MP.io.peers().map(q => q && q.pid).filter(Boolean));
   if (!MP.dealer && MP.io.kind === 'sb' && now - (MP.pollAt || 0) > 4000){ MP.pollAt = now; MP.io.get().then(t => t && mpOnState(t), () => {}); }   // 바깥 사이트: 실시간 신호가 빠져도 4초 안에 맞춘다
   if (MP.T) for (const p of MP.T.seats) if (p){ if (here.has(p.pid)) delete MP.gone[p.pid]; else MP.gone[p.pid] = MP.gone[p.pid] || now; }
+  if (MP.note && now > MP.note.until){ MP.note = null; mpRender(); }
   if (MP.T && !MP.T.seats.some(p => p && p.pid === MP.pid) && now - (MP.sitAt || 0) > 2500){ MP.sitAt = now; mpSend('sit', {name:MP.name}); }
   if (!MP.dealer || !MP.T) return;
   const T = MP.T, gone = mpGone();
@@ -3637,16 +3648,25 @@ function mpRender(){
   S.street = T.street; S.curBet = T.curBet; S.minRaise = T.minRaise; S.raises = 0; S.pot = T.pot; S.potVis = T.pot;
   Object.assign(S, {banner:null, sd:null, review:null, explain:null, rab:null, hl:null, peek:true, rvHide:false, think:'차례', tour:null, eq:null});
   const sat = T.seats.filter(Boolean).length, key = `${T.hand}:${T.v}`;
+  const here = {}; for (const p of T.seats) if (p && !p.leave) here[p.pid] = p.name;
+  const came = MP.seen ? Object.keys(here).filter(x => !(x in MP.seen)) : [], went = MP.seen ? Object.keys(MP.seen).filter(x => !(x in here) && x !== MP.pid) : [];
+  MP.seen = here;
+  const nn = came.filter(x => x !== MP.pid).map(x => here[x] + '님이 앉았습니다').concat(went.map(x => MP.seen0[x] + '님이 나갔습니다'));
+  MP.seen0 = Object.assign(MP.seen0 || {}, here);
+  if (nn.length) MP.note = {text:nn.join(' · '), until:Date.now() + 4000};
   const my = seated && T.phase === 'play' && T.toAct === m && MP.sent !== key;
   if (my && S.preFold){ S.preFold = false; MP.sent = key; mpSend('act', {a:'fold'}); }   // 미리 폴드 예약
   const my2 = my && MP.sent !== key;
   S.wait = my2 ? (d => { MP.sent = key; mpSend('act', {a:d.a, to:d.to}); render(); }) : null;
   if (my && MP.turn !== key){ MP.turn = key; S.size = opts(0).minTo; if (MP.lastTurnHand !== T.hand + ':' + T.street){ MP.lastTurnHand = T.hand + ':' + T.street; sfx('chip', .35); } }
   S.post = T.phase === 'show' && T.res ? {l1:T.res.lines[0] || '', l2:(T.res.lines.slice(1).join(' · ') + ' — 곧 다음 판').replace(/^ · /, '')}
-    : T.phase === 'wait' ? {l1:`방 ${T.code} · ${sat}명 앉음`, l2:sat < 2 ? '친구가 같은 방 이름으로 들어오면 자리가 생깁니다' : '아래 [시작]을 누르면 딜러가 카드를 나눕니다'} : null;
+    : T.phase === 'wait' ? {l1:`방 ${T.code} · ${sat}명 앉음`, l2:sat < 2 ? (MP_PUBLIC ? '메뉴 › [초대 링크 보내기]로 친구를 부르세요' : '친구가 같은 방 이름으로 들어오면 자리가 생깁니다') : '아래 [시작]을 누르면 딜러가 카드를 나눕니다'} : null;
   const who = T.seats[T.toAct];
-  S.coach = {cls:my ? 'tip' : '', text:T.phase !== 'play' ? '' : my ? '내 차례' : !seated ? '구경 중' : S.seats[0].folded ? `폴드 — ${who ? who.name + ' 차례' : ''}` : who ? `${who.name} 차례` : ''};
+  const note = MP.note && Date.now() < MP.note.until && !my ? MP.note.text : '';
+  S.coach = {cls:my ? 'tip' : '', text:note || (T.phase !== 'play' ? '' : my ? '내 차례' : !seated ? '구경 중' : S.seats[0].folded ? `폴드 — ${who ? who.name + ' 차례' : ''}` : who ? `${who.name} 차례` : '')};
   render();
+  for (const x of came){ const k = S.seats.findIndex(q => q.pid === x), el = k >= 0 && $('seat' + k); if (el && el._plate && el._plate.animate){ el._plate.animate([{opacity:0, transform:'translateY(-22px) scale(.82)'}, {opacity:1, transform:'translateY(2px) scale(1.04)', offset:.7}, {opacity:1, transform:'none'}], {duration:750, easing:'ease-out'}); } }
+  if (came.length) sfx('chip', .3);
 }
 
 // --- 연결: claude.ai 안이면 그 방·저장소, 바깥 사이트(GitHub Pages)면 Supabase ---
@@ -3730,7 +3750,7 @@ async function mpEnter(code, create){
   const saved = {}; for (const k of Object.keys(S)) saved[k] = S[k];
   MP = {code, name, pid:mpPid(name), tab:mpPid(name) + '-' + Math.random().toString(36).slice(2, 6), io, T:null, dealer:false, gone:{}, saved, ns:NS, opt:Object.assign({}, S.opt)};
   S.opt.eq = false; S.opt.coach = false;
-  document.body.classList.add('mp'); $('mpSheet').hidden = true; $('tools2').classList.remove('open');
+  document.body.classList.add('mp'); document.body.classList.remove('lobby'); $('mpSheet').hidden = true; $('tools2').classList.remove('open');
   Promise.resolve(io.presence({pid:MP.pid, name})).catch(() => {});
   io.get().then(t => mpOnState(t), () => {});   // 연결 직후 받은 상태는 MP 가 생기기 전이라 버려졌다 — 한 번 더 읽는다
   await mpLease();
@@ -3738,6 +3758,7 @@ async function mpEnter(code, create){
   MP.leaseT = setInterval(mpLease, 3000); MP.tickT = setInterval(mpTick, 1000);
   mpSend('sit', {name}); MP.sitAt = Date.now();
   if (MP.T) mpRender(); else { S.coach = {cls:'', text:`방 ${code}에 들어가는 중…`}; render(); }
+  if (MP_PUBLIC) try { history.replaceState(null, '', location.pathname + '?room=' + code); } catch (e) {}
 }
 function mpLeave(){
   if (!MP) return;
@@ -3751,14 +3772,46 @@ function mpLeave(){
   S.opt = m.opt; NS = m.ns;
   document.body.classList.remove('mp');
   buildSeatEls(); render();
+  if (LOBBY){ try { history.replaceState(null, '', location.pathname); } catch (e) {} mpLobby(); }
 }
-$('mpOpen').onclick = () => {
-  if (MP){ mpLeave(); return; }
-  $('mpName').value = mpLS('hp-mp-name') || ''; $('mpCode').value = mpLS('hp-mp-code') || Math.random().toString(36).slice(2, 6);
-  mpSay(''); $('mpSheet').hidden = false; $('tools2').classList.remove('open');
-};
+function mpOpenSheet(){
+  const inv = !MP && MP_INVITE ? MP_INVITE : '';
+  $('mpName').value = mpLS('hp-mp-name') || ''; $('mpCode').value = inv || mpLS('hp-mp-code') || Math.random().toString(36).slice(2, 6);
+  $('mpJoin').setAttribute('aria-pressed', inv ? 'true' : 'false'); $('mpCreate').setAttribute('aria-pressed', inv ? 'false' : 'true');
+  mpSay(inv ? `「${inv}」 방에 초대받았습니다 — 이름을 적고 [들어가기]를 누르세요` : ''); $('mpSheet').hidden = false; $('tools2').classList.remove('open');
+  if (!$('mpName').value) setTimeout(() => $('mpName').focus(), 60);
+}
+$('mpOpen').onclick = () => { if (MP){ mpLeave(); return; } mpOpenSheet(); };
 $('mpClose').onclick = () => { $('mpSheet').hidden = true; };
-$('mpSheet').addEventListener('click', e => { if (e.target.id === 'mpSheet') $('mpSheet').hidden = true; });
+$('mpSheet').addEventListener('click', e => { if (e.target.id === 'mpSheet' && !(LOBBY && !MP)) $('mpSheet').hidden = true; });
+for (const id of ['mpName', 'mpCode']) $(id).addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); ($('mpJoin').getAttribute('aria-pressed') === 'true' ? $('mpJoin') : $('mpCreate')).click(); } });
+// 공개 주소 입구 — 빈 테이블(사람이 들어오는 대로 앉는다) + 이름·방 창. 혼자 판의 자리는 LOBBY 에 맡겨 둔다
+function mpLobby(){
+  if (!LOBBY) LOBBY = {seats:S.seats, ns:NS, btn:S.btn};
+  if (NS !== 6){ NS = 6; buildSeatEls(); }
+  S.seats = Array.from({length:6}, emptySeat);
+  Object.assign(S, {phase:'idle', board:[], pot:0, potVis:0, sbI:-1, bbI:-1, toAct:-1, post:null, banner:null, sd:null, review:null, wait:null, coach:{cls:'', text:'이름을 적고 방에 들어가면 테이블에 앉습니다'}});
+  document.body.classList.add('mp', 'lobby'); render();
+  mpOpenSheet();
+}
+$('mpSolo').onclick = () => {
+  if (!LOBBY || MP) return;
+  const L = LOBBY; LOBBY = null;
+  S.seats = L.seats; S.btn = L.btn; S.coach = {cls:'', text:''};
+  if (NS !== L.ns){ NS = L.ns; } buildSeatEls();
+  document.body.classList.remove('mp', 'lobby'); $('mpSheet').hidden = true; render();
+  if (!S.tour && S.seats[0].stack < bbAmt()) askBuyin('칩이 부족합니다. 얼마로 앉을까요?', true);
+};
+// 초대 링크 — 폰이면 공유 창(카톡 등), 아니면 클립보드
+$('mpLink').onclick = async () => {
+  if (!MP) return;
+  const b = $('mpLink'), url = location.origin + location.pathname + '?room=' + MP.code;
+  try {
+    if (navigator.share){ await navigator.share({title:'홀덤', text:`홀덤 같이 쳐요 — 방 ${MP.code}`, url}); b.textContent = '보냈습니다'; }
+    else { await navigator.clipboard.writeText(url); b.textContent = '복사했습니다'; }
+  } catch (e){ b.textContent = e && e.name === 'AbortError' ? '초대 링크 보내기' : url; }
+  setTimeout(() => { b.textContent = '초대 링크 보내기'; }, 4000);
+};
 $('mpJoin').onclick = () => mpEnter($('mpCode').value, false);
 $('mpCreate').onclick = () => mpEnter($('mpCode').value, true);
 // 메뉴 줄 — 이 화면에서 연결이 되는지
@@ -3766,6 +3819,7 @@ $('mpCreate').onclick = () => mpEnter($('mpCode').value, true);
   const el = $('mpProbe'), say = t => { el.textContent = t; };
   say('');   // claude.ai 안이면 그 방, 밖(공개 주소)이면 Supabase — 들어갈 때 고른다
 })();
+if (MP_PUBLIC) mpLobby();
 window.__mpt = {mpNew, mpDeal, mpAct, mpFlow, mpFinish, mpOpts};   // 시험용(엔진)
 window.__dbg = {advise, ensureEq, rangeX, opts, newDeck};   // 시험용(조언 장면 검사)
 })();
