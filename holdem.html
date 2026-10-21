@@ -583,7 +583,15 @@ body{margin:0}
 .felt.half .oval{border-radius:0 0 50% 50% / 0 0 40% 40%;border-top:0;background:radial-gradient(ellipse 80% 70% at 50% 62%,var(--felt) 0%,var(--felt-deep) 92%);
   -webkit-mask-image:linear-gradient(to bottom,transparent 0,rgba(0,0,0,.25) 7%,rgba(0,0,0,.75) 22%,#000 40%);mask-image:linear-gradient(to bottom,transparent 0,rgba(0,0,0,.25) 7%,rgba(0,0,0,.75) 22%,#000 40%);
   box-shadow:0 0 0 1px #000,inset 0 0 0 2px var(--brass-soft),inset 0 -12px 40px rgba(0,0,0,.45),0 18px 40px rgba(0,0,0,.55)}
-.felt.half .oval::after{top:0;border-top:0}
+.felt.half .oval{top:0;left:0;right:auto;height:auto;border:0;background:none;box-shadow:none;border-radius:0;-webkit-mask-image:none;mask-image:none}
+.felt.half .oval::after{display:none}
+.felt.half #banner .banner{top:calc(var(--cy) - 82px)}   /* 판 결과는 보드 위(판 중 팟 자리) — 보드 카드를 덮지 않는다 */
+.felt.half .oval svg{display:block;overflow:visible}
+.felt.half .potamt{font-size:14px;padding:5px 16px;background:rgba(4,26,25,.78);border:1px solid rgba(120,210,200,.28);box-shadow:inset 0 1px 4px rgba(0,0,0,.5);color:#eafaf6}
+.felt.half .slots > *{border-color:rgba(200,255,245,.22)}
+.felt.half .card.w5 .front{box-shadow:0 0 0 2.5px #f7c948,0 0 16px rgba(247,201,72,.85)}
+.felt.half .seat.win .plate{border-color:#f7c948;box-shadow:0 0 0 1px #f7c948,0 0 18px rgba(247,201,72,.6)}
+.felt.half .seat.win .plate::after{content:"WINNER";position:absolute;left:50%;top:-11px;translate:-50% 0;padding:1px 8px;border-radius:999px;background:linear-gradient(#ffe48a,#d79b1c);color:#2a1a02;font:900 9.5px/1.3 var(--ui);letter-spacing:.12em;box-shadow:0 1px 4px rgba(0,0,0,.6);z-index:2}
 .deck{position:absolute;left:calc(50% + 66px);top:calc(var(--cy) + clamp(38px,10.4vw,50px) * .55 + 2px);width:30px;height:42px;border-radius:4px;z-index:1;
   background:repeating-linear-gradient(45deg,rgba(255,236,214,.22) 0 1px,rgba(0,0,0,0) 1px 6px),repeating-linear-gradient(-45deg,rgba(255,236,214,.22) 0 1px,rgba(0,0,0,0) 1px 6px),radial-gradient(ellipse,#8e2234,#561120);
   box-shadow:inset 0 0 0 2px #fbf7ef,1px 1px 0 #d9cdb6,2px 2px 0 #561120,3px 3px 0 #d9cdb6,0 6px 10px rgba(0,0,0,.5)}
@@ -2689,7 +2697,34 @@ function layoutSeats(){
   // 펠트 타원: 폭은 판 전체, 높이는 폭의 0.6 안팎(위·아래 손님 자리를 남긴다)
   let oh = Math.round(Math.max(W * 0.6, Math.min(W * 0.74, H - 190))), B0 = oh / 2 + 32,   // 타원은 줄이지 않는다(칩·보드가 펠트 위에 서야 한다)
     cy = Math.round(Math.min(H - B0 - 30, Math.max(H / 2, B0 + 64))), ot = cy - oh / 2;
-  const HP = HALF ? {top:0, hh:H - 62} : null;   // 윗변 = 판 맨 위(흐려지는 쪽) · 아랫변 = 내 이름표 위
+  const HP = HALF ? {top:0, hh:H - 62} : null;
+  // 혼자 치기 테이블 = 위가 좁고 평평한 사다리꼴(모서리 둥글게) → 아래로 넓어져 둥글게 닫힌다. 그리는 길과 자리·칩이 쓰는 폭이 같은 한 벌이다
+  let TB = null;
+  if (HP){
+    const y0 = 18, y1 = H - 64, h = y1 - y0, wt = W * 0.27, wb = W / 2 - 40, rc = 24, yw = y0 + h * 0.64, k = 0.552;
+    const segR = [[[cx0 => cx0 + wt + 7, y0 + rc], [cx0 => cx0 + wt + (wb - wt) * 0.5, y0 + h * 0.28], [cx0 => cx0 + wb, y0 + h * 0.46], [cx0 => cx0 + wb, yw]],
+                  [[cx0 => cx0 + wb, yw], [cx0 => cx0 + wb, yw + (y1 - yw) * k], [cx0 => cx0 + wb * k, y1], [cx0 => cx0, y1]]];
+    const c0 = W / 2, P = sg => sg.map(([fx, y]) => [fx(c0), y]);
+    const bz = (q, t) => { const u = 1 - t; return [u*u*u*q[0][0] + 3*u*u*t*q[1][0] + 3*u*t*t*q[2][0] + t*t*t*q[3][0], u*u*u*q[0][1] + 3*u*u*t*q[1][1] + 3*u*t*t*q[2][1] + t*t*t*q[3][1]]; };
+    const smp = [[c0 + wt - rc, y0]]; for (let a = 1; a <= 8; a++){ const t = a / 8, u = 1 - t; smp.push([u*u*(c0 + wt - rc) + 2*u*t*(c0 + wt) + t*t*(c0 + wt + 7), u*u*y0 + 2*u*t*y0 + t*t*(y0 + rc)]); }
+    for (const sg of segR){ const q = P(sg); for (let a = 1; a <= 40; a++) smp.push(bz(q, a / 40)); }
+    const hw = y => { if (y <= y0) return wt - rc; if (y >= y1) return 0; for (let a = 1; a < smp.length; a++) if (smp[a][1] >= y){ const [x1, yA] = smp[a - 1], [x2, yB] = smp[a], r = (y - yA) / Math.max(1e-6, yB - yA); return x1 + (x2 - x1) * r - c0; } return 0; };
+    const f2 = v => v.toFixed(1), [a1, a2] = segR.map(P);
+    const half = (sx) => `${f2(c0 + sx * (wt - rc))} ${y0} Q ${f2(c0 + sx * wt)} ${y0} ${f2(c0 + sx * (wt + 7))} ${y0 + rc}` + [a1, a2].map(q => ` C ${q.slice(1).map(([x, y]) => f2(c0 + sx * (x - c0)) + ' ' + f2(y)).join(' ')}`).join('');
+    const R = `M ${half(1)}`, Lp = [a2, a1].map(q => ` C ${[q[2], q[1], q[0]].map(([x, y]) => f2(c0 - (x - c0)) + ' ' + f2(y)).join(' ')}`).join('');
+    const d = `${R}${Lp} Q ${f2(c0 - wt)} ${y0} ${f2(c0 - wt + rc)} ${y0} Z`;
+    TB = {y0, y1, hw};
+    const ov = f.querySelector('.oval');
+    ov.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><defs>
+      <radialGradient id="tbF" cx="50%" cy="58%" r="62%"><stop offset="0" stop-color="#3fa59d"/><stop offset=".55" stop-color="#22746f"/><stop offset="1" stop-color="#0f3f3d"/></radialGradient>
+      <linearGradient id="tbR" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d6560"/><stop offset=".45" stop-color="#2a2522"/><stop offset=".7" stop-color="#4b4440"/><stop offset="1" stop-color="#171412"/></linearGradient>
+      <pattern id="tbD" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".6" fill="rgba(0,0,0,.18)"/></pattern></defs>
+      <path d="${d}" fill="none" stroke="rgba(0,0,0,.55)" stroke-width="26" transform="translate(0 7)"/>
+      <path d="${d}" fill="url(#tbF)" stroke="url(#tbR)" stroke-width="14"/>
+      <path d="${d}" fill="url(#tbD)"/>
+      <path d="${d}" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="1.2" transform="translate(${W / 2} ${(y0 + y1) / 2}) scale(.93) translate(${-W / 2} ${-(y0 + y1) / 2})"/>
+      <path d="${d}" fill="none" stroke="#000" stroke-width="1"/></svg>`;
+  } else { const ov = f.querySelector('.oval'); if (ov.firstChild) ov.innerHTML = ''; }   // 윗변 = 판 맨 위(흐려지는 쪽) · 아랫변 = 내 이름표 위
   if (HP){ oh = HP.hh; ot = HP.top; cy = Math.round(HP.top + HP.hh * 0.56); }   // 보드 = 가운데 줄과 아래 줄 사이   // 맨 위 자리 카드(64)가 판 안에 들게 내리되 맨 아래 내 자리가 넘치지 않는 데까지   // 맨 위 자리는 이름표 위로 카드가 서니(약 64px) 그만큼 판을 내린다 — 맨 아래 내 자리가 넘치지 않는 데까지
   f.style.setProperty('--cy', cy + 'px'); f.style.setProperty('--ot', ot + 'px'); f.style.setProperty('--oh', oh + 'px');
   // 자리를 잇는 길 = 타원보다 조금 큰 타원(옆은 난간 위, 위·아래는 난간 바깥)
@@ -2702,7 +2737,7 @@ function layoutSeats(){
   const nl = Math.ceil((NS - 1) / 2), nr = NS - 1 - nl, HA = cx - 40, HB = HP ? HP.hh + 32 : 0;
   const hpAt = i => { if (!i) return [cx, HP.top + HB]; const lf = i <= nl, k = lf ? i - 1 : i - 1 - nl, n = lf ? nl : nr, q = n > 1 ? k / (n - 1) : .5, th = (lf ? 46 + 34 * q : 80 - 34 * q) * Math.PI / 180;   // 양옆 줄은 가장자리에 붙여 보드 다섯 장 자리를 비운다
     const y = HP.top + HB * Math.cos(th), yc = HP.top + HP.hh * 0.6, u = Math.max(0, (y - yc) / (HP.hh * 0.4)), w = (W / 2) * Math.sqrt(Math.max(0, 1 - u * u));   // 그 높이의 테두리 폭(위 60%는 곧고 아래만 둥글다)
-    return [cx + (lf ? -1 : 1) * Math.max(0, w - 38), y]; };   // 이름표 가운데가 테두리에서 38px 안쪽
+    return [cx + (lf ? -1 : 1) * (TB ? Math.min(W / 2 - 40, TB.hw(y) + 6) : Math.max(0, w - 38)), y]; };   // 이름표 가운데가 테두리에서 38px 안쪽
   const at = sv => { sv = ((sv % L) + L) % L; let k = 1; while (k < acc.length - 1 && acc[k] < sv) k++; const r = (sv - acc[k - 1]) / Math.max(1e-6, acc[k] - acc[k - 1]); return [pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * r, pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * r]; };
   const boxes = [], seats = [];
   for (let i = 0; i < NS; i++){
@@ -2721,7 +2756,8 @@ function layoutSeats(){
   const pw = f.querySelector('.potwrap'); boxes.push([cx - 92, pw.offsetTop - 4, 184, 42]);   // 팟 칩 기둥 + 「팟 $00」 글씨가 다 서는 폭
   const dk = $('deck'); boxes.push([dk.offsetLeft, dk.offsetTop, dk.offsetWidth + 3, dk.offsetHeight + 3]);
   boxes.push([8, H - 48, 112, 42]);   // 왼쪽 아래 [셔플] 단추 자리(판 중에만 보이지만 늘 비워 둔다)
-  const inOval = HP ? (mx, my) => { const yc = HP.top + HP.hh * 0.6; return my >= HP.top + 4 && (my <= yc ? Math.abs(mx - cx) <= W / 2 - 6 : ((mx - cx) / (W / 2 - 6)) ** 2 + ((my - yc) / (HP.hh * 0.4 - 4)) ** 2 <= 1); }   // 위 60%는 곧은 옆면 · 아래 40%만 둥글다
+  const inOval = TB ? (mx, my) => my >= TB.y0 + 8 && my <= TB.y1 - 8 && Math.abs(mx - cx) <= TB.hw(my) - 10
+    : HP ? (mx, my) => { const yc = HP.top + HP.hh * 0.6; return my >= HP.top + 4 && (my <= yc ? Math.abs(mx - cx) <= W / 2 - 6 : ((mx - cx) / (W / 2 - 6)) ** 2 + ((my - yc) / (HP.hh * 0.4 - 4)) ** 2 <= 1); }   // 위 60%는 곧은 옆면 · 아래 40%만 둥글다
     : (mx, my) => ((mx - cx) / (W / 2 - 6)) ** 2 + ((my - cy) / (oh / 2 - 4)) ** 2 <= 1;
   let loose = false;   // 펠트 안에 빈 곳이 없으면 두 번째 바퀴는 펠트 밖(판 안)까지 본다
   const hit = (r) => (loose ? r[0] < 0 || r[0] + r[2] > W || r[1] < 0 || r[1] + r[3] > H : !inOval(r[0] + r[2] / 2, r[1] + r[3] / 2)) || boxes.some(q => r[0] < q[0] + q[2] && q[0] < r[0] + r[2] && r[1] < q[1] + q[3] && q[1] < r[1] + r[3]);
