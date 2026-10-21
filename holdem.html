@@ -468,6 +468,8 @@ body{margin:0}
 @media (max-width:520px){
   /* 위 여백 68px: 이 페이지를 띄운 앱의 ✕·⋯ 버튼(화면 위 약 60~93px)이 맨 위 줄을 가렸다 */
   .app{gap:6px;padding-block:68px 8px;position:relative}
+  body.ext .app{padding-top:12px}   /* claude.ai 밖(공개 주소)에는 위를 덮는 머리줄이 없다 */
+  body.ext #tools2{top:48px}
   .top,#tRules{display:none}
   .menuBtn{display:inline-block;margin-left:auto}
   .modes button{padding:4px 12px;font-size:12px}
@@ -2595,7 +2597,8 @@ function layoutSeats(){
   seatKey = key;
   f.classList.toggle('ns8', NS === 8);   // 8인: 내 카드·보드를 조금 작게
   // 펠트 타원: 폭은 판 전체, 높이는 폭의 0.6 안팎(위·아래 손님 자리를 남긴다)
-  const oh = Math.round(Math.max(W * 0.6, Math.min(W * 0.74, H - 190))), cy = Math.round(H / 2), ot = cy - oh / 2;
+  const oh = Math.round(Math.max(W * 0.6, Math.min(W * 0.74, H - 190))), B0 = oh / 2 + 32,
+    cy = Math.round(Math.min(H - B0 - 24, Math.max(H / 2, B0 + 64))), ot = cy - oh / 2;   // 맨 위 자리는 이름표 위로 카드가 서니(약 64px) 그만큼 판을 내린다 — 맨 아래 내 자리가 넘치지 않는 데까지
   f.style.setProperty('--cy', cy + 'px'); f.style.setProperty('--ot', ot + 'px'); f.style.setProperty('--oh', oh + 'px');
   // 자리를 잇는 길 = 타원보다 조금 큰 타원(옆은 난간 위, 위·아래는 난간 바깥)
   const cx = W / 2, A = (cx - 42) / (NS === 8 ? Math.cos(Math.PI / 8) : NS === 6 ? Math.sin(Math.PI / 3) : 1), B = oh / 2 + 32;   // 양옆 손님 이름표 가운데가 화면 끝에서 42px
@@ -3474,6 +3477,7 @@ try {
     S.btn %= NS;
   }
 } catch (e) { S.tour = null; }
+try { document.body.classList.toggle('ext', window.top === window || /[?&]ext(&|$)/.test(location.search)); } catch (e) {}   // 바깥 사이트에서 직접 열림 = claude.ai 머리줄 자리를 비우지 않는다
 { const fit = () => document.documentElement.style.setProperty('--appH', window.innerHeight + 'px'); fit(); addEventListener('resize', fit); if (window.visualViewport) visualViewport.addEventListener('resize', fit); }
 buildChart(); renderLeak(); buildSeatEls(); syncOpt(); syncNS(); syncTour(); render();
 const MP_ROOM = 'main';   // 테이블은 하나 — 방 이름이 없다
