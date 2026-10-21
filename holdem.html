@@ -765,6 +765,7 @@ body.mp .btns.post{grid-template-columns:1fr 1.6fr}
 body.mp .seat .lab .sitbtn{font-size:11px}
 body.lobby #postRow,body.lobby #mpClose{display:none !important}
 .coachwrap.blank{visibility:hidden}
+#profGrid{grid-template-columns:repeat(2,1fr)}   /* 같이 친 핸드·참여·레이즈·눈치 — 2×2 */
 #mpEnd{display:none}
 body.mp:not(.mphost) #tools2 #mpEnd{display:none}
 body.mp #tools2{width:min(260px,80vw);gap:8px;padding:12px}
@@ -2521,16 +2522,11 @@ function rdLearn(sd){
   const ch = bots.filter(q => rdRead(rdOf(q.name)).join('|') !== before[q.name]).map(q => { const rr = rdRead(rdOf(q.name)); return `${q.name}(눈치 ${LEARN_T(learnOf(q))}): ${rr.length ? rr[0] : '아직 나를 모릅니다'}`; });
   S.rdNote = parts.length || ch.length ? (parts.length ? '이 테이블이 본 것 — ' + parts.join(' · ') : '') + (ch.length ? `${parts.length ? '\n' : ''}생각이 바뀐 손님 — ${ch.join(' / ')}` : '') : null;
 }
-function rdHTML(p){
-  const e = (S.rd || {})[p.name], R = x => Math.round(x);
-  if (!e || e.n < 1) return `<h3 class="tlh">이 손님이 본 나</h3><p class="empty">아직 나에 대해 아는 것이 없습니다 — 같이 칠수록 내 버릇을 배웁니다(눈치 ${LEARN_T(learnOf(p))})</p>`;
-  const row = k => { const [n, v, b] = e.bk[k]; return `<div class="rdr"><span>${RD_BK[k]}</span><b>${R(n)}번</b><small>쇼다운으로 본 것: 센 패 ${R(v)} · 블러프 ${R(b)}</small></div>`; };
+function rdHTML(p){   // 이 손님이 나를 어떻게 보는지 — 판단 문장만(횟수 표는 보이지 않는다)
+  const e = (S.rd || {})[p.name];
+  if (!e || e.n < 1) return `<h3 class="tlh">이 손님이 본 나</h3><p class="empty">아직 나에 대해 아는 것이 없습니다</p>`;
   const rr = rdRead(e);
-  return `<h3 class="tlh">이 손님이 본 나 <small>눈치 ${LEARN_T(learnOf(p))} · 같이 친 ${e.n}판</small></h3>${row('g')}${row('m')}${row('s')}`
-    + `<div class="rdr"><span>내 체크 뒤 반격</span><b>${R(e.ck[1])}/${R(e.ck[0])}</b><small>체크 레이즈하거나 쇼다운에서 센 패였던 체크</small></div>`
-    + `<div class="rdr"><span>베팅 받고 접음</span><b>${R(e.fb[1])}/${R(e.fb[0])}</b><small>이 손님 앞에서 베팅을 받았을 때</small></div>`
-    + `<ul class="rdread">${rr.length ? rr.map(t => `<li>${t}</li>`).join('') : '<li>아직 뚜렷한 생각이 없습니다 — 판이 더 쌓여야 합니다</li>'}</ul>`
-    + '<p class="empty">기억은 판마다 조금씩 흐려집니다. 방식을 바꾸면 이 손님도 생각을 바꿉니다. 테이블 리셋이나 새 손님은 처음부터입니다.</p>';
+  return `<h3 class="tlh">이 손님이 본 나</h3><ul class="rdread">${rr.length ? rr.map(t => `<li>${t}</li>`).join('') : '<li>아직 뚜렷한 생각이 없습니다 — 판이 더 쌓여야 합니다</li>'}</ul>`;
 }
 // ===== 내 의도 — 기계가 먼저 짐작하고, 내가 한 번 눌러 고친다 =====
 const INTENTS = ['가치', '블러프', '함정', '이미지'];
@@ -3495,7 +3491,7 @@ $('felt').addEventListener('click', e => {
   const p = S.seats[i], o = (S.obs || {})[p.name] || {h:0, vp:0, pfr:0}, r = (a, b) => b ? Math.round(a / b * 100) + '%' : '—';
   $('profName').textContent = `${p.name} · ${p.tag}`;
   $('profDesc').textContent = prof(p).desc;
-  $('profGrid').innerHTML = [['같이 친 핸드', o.h], ['돈 넣고 참여', r(o.vp, o.h)], ['프리플롭 레이즈', r(o.pfr, o.h)]].map(([k, v]) => `<div class="stat"><small>${k}</small><b>${v}</b></div>`).join('');
+  $('profGrid').innerHTML = [['같이 친 핸드', o.h], ['돈 넣고 참여', r(o.vp, o.h)], ['프리플롭 레이즈', r(o.pfr, o.h)], ['눈치', LEARN_T(learnOf(p))]].map(([k, v]) => `<div class="stat"><small>${k}</small><b>${v}</b></div>`).join('');
   $('profRead').innerHTML = rdHTML(p);
   $('profSheet').hidden = false;
 });
