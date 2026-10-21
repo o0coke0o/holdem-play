@@ -762,6 +762,21 @@ body.mp #tools2 > :not(.mprow):not(#tSound){display:none !important}
 body.mp .btns.post{grid-template-columns:1fr 1.6fr}
 body.mp .seat .lab .sitbtn{font-size:11px}
 body.lobby #postRow,body.lobby #mpClose{display:none !important}
+.coachwrap.blank{visibility:hidden}
+body:not(.mp) #chipRow,body.mp #sizeRow{display:none !important}
+.chiprow{display:flex;justify-content:center;align-items:center;gap:8px;padding:2px 0 4px}
+.chip{width:42px;height:42px;border-radius:50%;border:4px dashed var(--e);background:var(--c);background-clip:border-box;color:#fff;font:900 13px/1 inherit;box-shadow:inset 0 0 0 3px var(--c),inset 0 0 0 4px rgba(0,0,0,.25),0 2px 5px rgba(0,0,0,.55);cursor:pointer;padding:0}
+.chip:active:not(:disabled){transform:translateY(1px) scale(.96)}
+.chip:disabled,.chipx:disabled{opacity:.32;cursor:default}
+.chipx{width:34px;height:34px;border-radius:50%;border:1px solid var(--brass-soft);background:rgba(0,0,0,.35);color:var(--ivory);font-size:16px;cursor:pointer;padding:0}
+.seat.dealer{pointer-events:none}
+.seat.dealer .dsil{width:58px;height:47px;margin-bottom:-6px}
+.seat.dealer .dsil svg{width:100%;height:100%;fill:#0b0705;stroke:var(--brass-soft);stroke-width:1.2}
+.seat.dealer .dsil .tie{fill:var(--brass);stroke:none}
+.seat.dealer .plate{border-color:var(--brass)}
+.seat.dealer .plate .av{background:var(--brass);color:var(--ink)}
+.seat.dealer .nm{letter-spacing:.12em;font-weight:900;color:var(--brass)}
+.seat.dealer .hole{display:none}
 body:not(.lobby) #mpSolo{display:none}
 body:not(.mp) #mpLink{display:none}
 #mpSolo{background:none;border:0;color:var(--muted);font-size:12px;text-decoration:underline;padding:6px 0;margin-top:6px;cursor:pointer}
@@ -869,7 +884,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
     <button class="tool" id="tReset">테이블 리셋</button>
     <div class="nsrow tourrow"><span>토너먼트</span><button class="tool" data-tour="4">4테이블</button><button class="tool" data-tour="8">8테이블</button><button class="tool" data-tour="16">16테이블</button></div>
     <button class="tool" id="tTourQuit" hidden>지금 순위로 마치기</button>
-    <div class="nsrow mprow"><span>친구 대전</span><button class="tool" id="mpOpen">방 만들기 · 들어가기</button><button class="tool" id="mpLink">초대 링크 보내기</button><span id="mpProbe" style="font-size:11px;color:var(--muted)">연결 확인 중…</span></div>
+    <div class="nsrow mprow"><span>친구 대전</span><button class="tool" id="mpOpen">테이블에 앉기</button><button class="tool" id="mpLink">주소 보내기</button><span id="mpProbe" style="font-size:11px;color:var(--muted)">연결 확인 중…</span></div>
     <div class="nsrow"><span>인원</span><button class="tool" data-ns="4">4인</button><button class="tool" data-ns="6">6인</button><button class="tool" data-ns="8">8인</button></div>
   </div>
 
@@ -892,6 +907,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
 
   <div class="rail">
     <div class="bankline"><span>내 칩<b id="bankAmt">0</b></span><span class="tnote" id="tnote"></span><button id="bBuy">칩 바꾸기</button></div>
+    <div class="chiprow" id="chipRow"><button class="chip" data-v="1" style="--c:#ece6da;--e:#2f5d9a;color:#1d1a16">1</button><button class="chip" data-v="2" style="--c:#e0b83a;--e:#fff;color:#2a1f08">2</button><button class="chip" data-v="5" style="--c:#c23b32;--e:#fff">5</button><button class="chip" data-v="10" style="--c:#2f5d9a;--e:#fff">10</button><button class="chip" data-v="20" style="--c:#2e8a57;--e:#fff">20</button><button class="chipx" id="chipX" aria-label="쌓은 칩 지우기">↺</button></div>
     <div class="sizerow" id="sizeRow">
       <button class="sz" data-f="min">최소</button><button class="sz" data-f="0.5">½팟</button><button class="sz" data-f="0.75">¾팟</button><button class="sz" data-f="1">팟</button>
       <input type="range" id="sizeR" min="0" max="1000" step="1" value="0" aria-label="베팅 크기">
@@ -967,8 +983,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
   <div class="panel" role="dialog" aria-label="친구 대전">
     <div style="display:flex;justify-content:space-between;align-items:center"><h2>친구 대전</h2><button class="tool" id="mpClose">닫기</button></div>
     <label class="mpf">내 이름 <small>테이블에 보일 이름</small><input id="mpName" maxlength="12" autocomplete="nickname"></label>
-    <label class="mpf">방 이름 <small>영문·숫자 — 친구에게 알려 줄 이름</small><input id="mpCode" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
-    <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px"><button class="tool" id="mpJoin">들어가기</button><button class="tool" id="mpCreate" aria-pressed="true">새 방 만들기</button></div>
+    <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px"><button class="tool" id="mpJoin" aria-pressed="true">앉기</button></div>
     <p class="empty" id="mpMsg" style="margin:8px 0 0"></p>
     <div style="text-align:center"><button id="mpSolo">혼자 연습하기</button></div>
   </div>
@@ -2650,6 +2665,14 @@ function renderSeat(p, i){
     el._bamt = el.querySelector('.sbet .amt'); el._d = el.querySelector('.dbtn'); el._av = el.querySelector('.av');
     el._nm = el.querySelector('.nm'); el._stk = el.querySelector('.stk'); el._lab = el.querySelector('.lab');
   }
+  if (p.dealer){
+    if (el.className !== 'seat dealer') el.className = 'seat dealer';
+    if (!el._sil){ el._sil = document.createElement('div'); el._sil.className = 'dsil'; el._sil.innerHTML = '<svg viewBox="0 0 64 52" aria-hidden="true"><circle cx="32" cy="15" r="11"/><path d="M7 52c0-14 11-23 25-23s25 9 25 23z"/><path class="tie" d="M24 31l8 4-8 4zM40 31l-8 4 8 4z"/><circle class="tie" cx="32" cy="35" r="1.8"/></svg>'; el.insertBefore(el._sil, el._plate); }
+    el._plate.style.setProperty('--ac', '#c9a24a');
+    setHTML(el._av, '♠'); setHTML(el._nm, 'DEALER'); setHTML(el._stk, '');
+    el._d.hidden = true; syncCards(el._hole, [], true); setHTML(el._bstack, ''); setHTML(el._bamt, ''); setHTML(el._lab, '');
+    return;
+  }
   if (p.empty){
     const c = 'seat empty'; if (el.className !== c) el.className = c;
     el._plate.style.setProperty('--ac', p.ac);
@@ -2715,7 +2738,7 @@ function renderActs(){
   const post = S.phase !== 'play';
   $('actsRow').hidden = post; $('postRow').hidden = !post; $('sizeRow').style.visibility = post ? 'hidden' : '';
   setHTML($('bNext2'), MP ? (S.phase === 'idle' ? '시작<kbd>두 명 이상 앉으면</kbd>' : '다음 판<kbd>곧 자동으로</kbd>') : `${S.phase === 'idle' ? '첫 핸드 시작' : '다음 핸드'}<kbd>SPACE</kbd>`);
-  if (MP) setHTML($('bQuit2'), '방 나가기<kbd>칩은 남김</kbd>');
+  if (MP) setHTML($('bQuit2'), '일어나기<kbd>테이블 떠나기</kbd>');
   const my = S.toAct === 0 && !!S.wait, p = S.seats[0], o = opts(0);
   const lockB = !my && S.phase === 'play' && !p.folded && p.hole.length === 2 && blindLock();
   const pre = !my && S.phase === 'play' && !p.folded && p.hole.length === 2 && !lockB;
@@ -2728,12 +2751,15 @@ function renderActs(){
   setHTML($('aAll'), `올인<kbd>${my ? fmt(p.stack + p.bet) : 'A'}</kbd>`);
   setHTML($('aFold'), lockB ? `미리 폴드<kbd>빅 블라인드 · 안 됨</kbd>` : pre ? (S.preFold ? '폴드 예약 ✓<kbd>차례 오면 바로</kbd>' : '미리 폴드<kbd>F</kbd>') : '폴드<kbd>F</kbd>');
   const can = my && o.canRaise;
-  document.querySelectorAll('.sz').forEach(b => b.disabled = !can);
+  document.querySelectorAll('.sz,.chip,#chipX').forEach(b => b.disabled = !can);
   const r = $('sizeR'); r.disabled = !can;
   if (can && document.activeElement !== r){ const x = o.maxTo > o.minTo ? Math.sqrt((clampTo(S.size, o) - o.minTo) / (o.maxTo - o.minTo)) : 0; r.value = Math.round(x * 1000); }
 }
 function renderCoach(){
   const co = $('coach');
+  { const mt = (MP || LOBBY) && S.phase !== 'play' ? (S.coach && S.coach.text) || '' : null;
+    co.parentElement.classList.toggle('blank', mt === '' && !S.post);
+    if (mt){ co.className = 'coach tip'; setHTML(co, `<span>${esc(mt)}</span>`); return; } }
   if (S.phase !== 'play'){
     if (S.phase === 'done' || S.phase === 'idle'){
       const a = S.post, peekTxt = '';
@@ -3448,8 +3474,8 @@ try {
 } catch (e) { S.tour = null; }
 { const fit = () => document.documentElement.style.setProperty('--appH', window.innerHeight + 'px'); fit(); addEventListener('resize', fit); if (window.visualViewport) visualViewport.addEventListener('resize', fit); }
 buildChart(); renderLeak(); buildSeatEls(); syncOpt(); syncNS(); syncTour(); render();
-const MP_INVITE = (() => { try { const q = (new URLSearchParams(location.search).get('room') || '').toLowerCase(); return /^[a-z0-9][a-z0-9-]{0,15}$/.test(q) ? q : ''; } catch (e) { return ''; } })();
-const MP_PUBLIC = !!MP_INVITE || /github\.io$/.test(location.hostname);   // 공개 주소 = 친구 대전 입구(혼자 연습은 claude.ai 쪽)
+const MP_ROOM = 'main';   // 테이블은 하나 — 방 이름이 없다
+const MP_PUBLIC = /github\.io$/.test(location.hostname) || /[?&]mp\b/.test(location.search);   // 공개 주소 = 친구 대전 입구(혼자 연습은 claude.ai 쪽) · ?mp 는 로컬 시험용
 if (!MP_PUBLIC && !S.tour && S.seats[0].stack < bbAmt()) askBuyin('칩이 부족합니다. 얼마로 앉을까요?', true);
 window.__he = S;
 /* ---------- 친구 대전 ----------
@@ -3465,7 +3491,7 @@ const mpCodeOk = c => /^[a-z0-9][a-z0-9-]{0,15}$/.test(c);
 function mpSay(t){ $('mpMsg').textContent = t; }
 
 // --- 엔진: T 는 JSON 그대로 저장되는 한 판의 전부 ---
-function mpNew(code, host){ return {v:0, id:Math.random().toString(36).slice(2, 10), code, host, ns:6, seats:Array(6).fill(null), btn:-1, sbI:-1, bbI:-1, board:[], deck:[], pot:0, street:'pre', curBet:0, minRaise:2, toAct:-1, phase:'wait', hand:0, sb:1, bb:2, start:200, auto:false, res:null, showAt:0}; }
+function mpNew(code, host){ return {v:0, id:Math.random().toString(36).slice(2, 10), code, host, ns:5, seats:Array(5).fill(null), btn:-1, sbI:-1, bbI:-1, board:[], deck:[], pot:0, street:'pre', curBet:0, minRaise:2, toAct:-1, phase:'wait', hand:0, sb:1, bb:2, start:200, auto:false, res:null, showAt:0}; }
 function mpNext(T, i, f){ for (let k = 1; k <= T.ns; k++){ const j = (i + k) % T.ns, p = T.seats[j]; if (p && f(p)) return j; } return -1; }
 function mpPut(p, a){ a = Math.max(0, Math.min(a, p.stack)); p.stack -= a; p.bet += a; p.inv += a; if (p.stack === 0) p.allin = true; return a; }
 function mpOpts(T, i){ const p = T.seats[i], toCall = Math.max(0, Math.min(T.curBet - p.bet, p.stack)), maxTo = p.bet + p.stack; return {toCall, maxTo, minTo:Math.min(maxTo, T.curBet > 0 ? T.curBet + T.minRaise : T.bb), canRaise:maxTo > T.curBet}; }
@@ -3557,7 +3583,6 @@ function mpReq(d){
     let i = T.seats.findIndex(p => p && p.pid === d.pid);
     if (i >= 0){ if (T.seats[i].name !== nm || T.seats[i].leave){ T.seats[i].name = nm; T.seats[i].leave = false; ch = true; } }
     else {
-      if (!T.seats.some(p => !p) && T.ns < 8){ T.seats.push(null, null); T.seats.length = 8; T.ns = 8; }
       i = T.seats.findIndex(p => !p);
       if (i >= 0){ T.seats[i] = {pid:d.pid, name:nm, stack:T.start, inHand:false, hole:[], bet:0, inv:0, folded:false, allin:false, acted:false, label:'', won:0, shown:false}; ch = true; }
     }
@@ -3600,6 +3625,7 @@ async function mpLease(){
   try { got = await MP.io.acquire(MP.tab); } catch (e) { got = false; }
   if (!MP) return;
   if (got && !MP.dealer){
+    MP.sweepAt = Date.now() + 4000;   // 접속자 목록이 들어올 시간을 두고 한 번 쓸어 낸다
     try { const t = await MP.io.get(); if (t && (!MP.T || t.id !== MP.T.id || t.v >= MP.T.v)) MP.T = structuredClone(t); } catch (e) {}
     if (!MP.T) MP.T = mpNew(MP.code, MP.pid);
   }
@@ -3615,6 +3641,12 @@ function mpTick(){
   if (MP.T && !MP.T.seats.some(p => p && p.pid === MP.pid) && now - (MP.sitAt || 0) > 2500){ MP.sitAt = now; mpSend('sit', {name:MP.name}); }
   if (!MP.dealer || !MP.T) return;
   const T = MP.T, gone = mpGone();
+  if (here.has(MP.pid)){
+    const ghost = (p, i) => p && !here.has(p.pid) && (MP.sweepAt && now > MP.sweepAt || MP.gone[p.pid] && now - MP.gone[p.pid] > 60000);
+    if (T.seats.some(ghost)){ const t = structuredClone(T); t.seats.forEach((p, i) => { if (ghost(p, i)) mpDrop(t, i); }); MP.sweepAt = 0; mpCommit(t); return; }
+    if (MP.sweepAt && now > MP.sweepAt) MP.sweepAt = 0;
+    if (!T.seats.some(p => p && p.pid === T.host && here.has(p.pid))){ const f = T.seats.find(p => p && here.has(p.pid) && !p.leave); if (f){ const t = structuredClone(T); t.host = f.pid; mpCommit(t); return; } }
+  }
   if (T.phase === 'play' && T.seats[T.toAct] && gone(T.seats[T.toAct])){ const t = structuredClone(T); mpDrop(t, t.toAct, true); mpCommit(t); return; }
   if (T.phase === 'show' && now - T.showAt > 6000){ const t = structuredClone(T); mpDeal(t, gone); mpCommit(t); return; }
   if (T.phase === 'wait' && T.auto && T.seats.filter(p => mpCanPlay(p, gone)).length >= 2){ const t = structuredClone(T); mpDeal(t, gone); mpCommit(t); }
@@ -3623,23 +3655,24 @@ function mpTick(){
 // --- 그리기: 내 자리를 맨 아래(0번)로 돌려 지금 화면에 싣는다 ---
 function mpRender(){
   if (!MP || !MP.T) return;
-  const T = MP.T, n = T.ns;
-  if (NS !== n){ NS = n; buildSeatEls(); }
+  const T = MP.T, n = T.ns, SCR = n === 5 ? [0, 1, 2, 4, 5] : null, NN = SCR ? 6 : n;   // 5자리: 화면 6칸 중 맨 위 가운데(3번)는 딜러
+  if (NS !== NN){ NS = NN; buildSeatEls(); }
   let m = T.seats.findIndex(p => p && p.pid === MP.pid); const seated = m >= 0; if (!seated) m = 0;
-  const rot = k => k < 0 ? -1 : (k - m + n) % n, host = T.host === MP.pid, away = mpGone();
-  $('mpOpen').textContent = '방 나가기';
-  S.seats = [];
+  const rot = k => k < 0 ? -1 : SCR ? SCR[(k - m + n) % n] : (k - m + n) % n, host = T.host === MP.pid, away = mpGone();
+  $('mpOpen').textContent = '테이블에서 일어나기';
+  S.seats = SCR ? Array(6).fill(null) : [];
   for (let k = 0; k < n; k++){
-    const j = (m + k) % n, p = T.seats[j];
-    if (!p){ S.seats.push(emptySeat()); continue; }
+    const j = (m + k) % n, p = T.seats[j], put = x => { if (SCR) S.seats[SCR[k]] = x; else S.seats.push(x); };
+    if (!p){ put(emptySeat()); continue; }
     const mine = seated && k === 0;
     const hole = p.inHand ? p.hole.map((c, x) => mine || p.shown ? Object.assign({}, c, {revealT:1}) : {r:'2', s:'s', v:2, id:`${T.hand}-x${j}-${x}`}) : [];
     const lc = /폴드/.test(p.label) ? 'fold' : /올인/.test(p.label) ? 'allin' : /레이즈|베팅/.test(p.label) ? 'raise' : 'call';
-    S.seats.push(Object.assign(mkSeat({name:p.name, tag:p.pid === T.host ? '방장' : '', ac:MP_COL[j % 8], me:mine}, p.stack),
+    put(Object.assign(mkSeat({name:p.name, tag:p.pid === T.host ? '방장' : '', ac:MP_COL[j % 8], me:mine}, p.stack),
       {bet:p.bet, inv:p.inv, hole, folded:p.inHand ? p.folded : T.phase !== 'wait', allin:p.allin, show:p.shown, won:p.won, pid:p.pid,
        label:p.label ? {t:p.label, c:p.won > 0 ? 'hand' : lc} : away(p) ? {t:'자리 비움', c:'fold'} : (!p.inHand && T.phase === 'play' ? {t:p.stack > 0 ? '다음 판부터' : '칩 없음', c:'fold'} : p.stack <= 0 ? {t:'칩 없음', c:'fold'} : null),
        rebuy:host && p.stack < T.bb && !(T.phase === 'play' && p.inHand)}));
   }
+  if (SCR) S.seats[3] = Object.assign(emptySeat(), {dealer:true});
   S.board = T.board.map(c => Object.assign({}, c, {revealT:1}));
   S.btn = rot(T.btn); S.sbI = rot(T.sbI); S.bbI = rot(T.bbI);
   S.phase = T.phase === 'play' ? 'play' : T.phase === 'show' ? 'done' : 'idle';
@@ -3657,9 +3690,9 @@ function mpRender(){
   if (my && S.preFold){ S.preFold = false; MP.sent = key; mpSend('act', {a:'fold'}); }   // 미리 폴드 예약
   const my2 = my && MP.sent !== key;
   S.wait = my2 ? (d => { MP.sent = key; mpSend('act', {a:d.a, to:d.to}); render(); }) : null;
-  if (my && MP.turn !== key){ MP.turn = key; S.size = opts(0).minTo; if (MP.lastTurnHand !== T.hand + ':' + T.street){ MP.lastTurnHand = T.hand + ':' + T.street; sfx('chip', .35); } }
+  if (my && MP.turn !== key){ MP.turn = key; MP.chipAdd = 0; S.size = opts(0).minTo; if (MP.lastTurnHand !== T.hand + ':' + T.street){ MP.lastTurnHand = T.hand + ':' + T.street; sfx('chip', .35); } }
   S.post = T.phase === 'show' && T.res ? {l1:T.res.lines[0] || '', l2:(T.res.lines.slice(1).join(' · ') + ' — 곧 다음 판').replace(/^ · /, '')}
-    : T.phase === 'wait' ? {l1:`방 ${T.code} · ${sat}명 앉음`, l2:sat < 2 ? (MP_PUBLIC ? '메뉴 › [초대 링크 보내기]로 친구를 부르세요' : '친구가 같은 방 이름으로 들어오면 자리가 생깁니다') : '아래 [시작]을 누르면 딜러가 카드를 나눕니다'} : null;
+    : null;
   const who = T.seats[T.toAct];
   const note = MP.note && Date.now() < MP.note.until && !my ? MP.note.text : '';
   S.coach = {cls:my ? 'tip' : '', text:note || (T.phase !== 'play' ? '' : my ? '내 차례' : !seated ? '구경 중' : S.seats[0].folded ? `폴드 — ${who ? who.name + ' 차례' : ''}` : who ? `${who.name} 차례` : '')};
@@ -3726,23 +3759,21 @@ async function mpIoSb(code){
 async function mpConnect(code){ return (await mpIoClaude(code)) || (await mpIoSb(code)); }
 
 // --- 들어가기·나가기 ---
-async function mpEnter(code, create){
+async function mpEnter(code){
   const name = $('mpName').value.trim().slice(0, 12);
   if (!name){ mpSay('이름을 적어 주세요'); $('mpName').focus(); return; }
   code = code.trim().toLowerCase();
-  if (!mpCodeOk(code)){ mpSay('방 이름은 영문 소문자·숫자로 1~16자입니다'); $('mpCode').focus(); return; }
+  if (!mpCodeOk(code)) return;
   if (S.phase === 'play'){ mpSay('지금 치는 핸드가 끝난 뒤에 들어갈 수 있습니다'); return; }
   if (S.tour){ mpSay('토너먼트를 마친 뒤에 들어갈 수 있습니다'); return; }
-  mpLS('hp-mp-name', name); mpLS('hp-mp-code', code);
+  mpLS('hp-mp-name', name);
   mpSay('연결하는 중…');
   let io = null;
   try { io = await mpConnect(code); } catch (e) { io = null; }
   if (!io){ mpSay('친구 대전 서버에 연결하지 못했습니다 — 잠시 뒤 다시 눌러 주세요'); return; }
   try {
     const ex = await io.get();
-    if (create && ex){ mpSay(`「${code}」 방이 이미 있습니다 — [들어가기]를 누르거나 다른 이름을 쓰세요`); return; }
-    if (!create && !ex){ mpSay(`「${code}」 방이 없습니다 — 방 이름을 확인하거나 [새 방 만들기]`); return; }
-    if (create) await io.set(mpNew(code, mpPid(name)));
+    if (!ex) await io.set(mpNew(code, mpPid(name)));   // 테이블이 아직 없으면 내가 연다(동시에 둘이 열어도 마지막 것 하나로 모이고, 못 앉은 쪽은 2.5초마다 다시 앉는다)
     await io.open(mpReq, t => mpOnState(t), c => { S.coach = {cls:'miss', text:`연결이 끊겼습니다 — ${c}`}; render(); });
   } catch (e){ mpSay(`들어가지 못했습니다 — ${e && (e.code || e.message) || e}${e && e.code === 'invalid_argument' ? ' (공유 권한이 「보기」면 쓸 수 없습니다 — 편집자로 초대받아야 합니다)' : ''}`); try { io.leave(); } catch (x) {} return; }
   mpSay('');
@@ -3757,7 +3788,6 @@ async function mpEnter(code, create){
   MP.leaseT = setInterval(mpLease, 3000); MP.tickT = setInterval(mpTick, 1000);
   mpSend('sit', {name}); MP.sitAt = Date.now();
   if (MP.T) mpRender(); else { S.coach = {cls:'', text:`방 ${code}에 들어가는 중…`}; render(); }
-  if (MP_PUBLIC) try { history.replaceState(null, '', location.pathname + '?room=' + code); } catch (e) {}
 }
 function mpLeave(){
   if (!MP) return;
@@ -3767,29 +3797,27 @@ function mpLeave(){
   MP = null;
   for (const k of Object.keys(S)) if (!(k in m.saved)) delete S[k];   // 친구 대전이 새로 만든 값은 버린다
   for (const k of Object.keys(m.saved)) S[k] = m.saved[k];
-  $('mpOpen').textContent = '방 만들기 · 들어가기';
+  $('mpOpen').textContent = '테이블에 앉기';
   S.opt = m.opt; NS = m.ns;
   document.body.classList.remove('mp');
   buildSeatEls(); render();
-  if (LOBBY){ try { history.replaceState(null, '', location.pathname); } catch (e) {} mpLobby(); }
+  if (LOBBY) mpLobby();
 }
 function mpOpenSheet(){
-  const inv = !MP && MP_INVITE ? MP_INVITE : '';
-  $('mpName').value = mpLS('hp-mp-name') || ''; $('mpCode').value = inv || mpLS('hp-mp-code') || Math.random().toString(36).slice(2, 6);
-  $('mpJoin').setAttribute('aria-pressed', inv ? 'true' : 'false'); $('mpCreate').setAttribute('aria-pressed', inv ? 'false' : 'true');
-  mpSay(inv ? `「${inv}」 방에 초대받았습니다 — 이름을 적고 [들어가기]를 누르세요` : ''); $('mpSheet').hidden = false; $('tools2').classList.remove('open');
+  $('mpName').value = mpLS('hp-mp-name') || '';
+  mpSay(''); $('mpSheet').hidden = false; $('tools2').classList.remove('open');
   if (!$('mpName').value) setTimeout(() => $('mpName').focus(), 60);
 }
 $('mpOpen').onclick = () => { if (MP){ mpLeave(); return; } mpOpenSheet(); };
 $('mpClose').onclick = () => { $('mpSheet').hidden = true; };
 $('mpSheet').addEventListener('click', e => { if (e.target.id === 'mpSheet' && !(LOBBY && !MP)) $('mpSheet').hidden = true; });
-for (const id of ['mpName', 'mpCode']) $(id).addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); ($('mpJoin').getAttribute('aria-pressed') === 'true' ? $('mpJoin') : $('mpCreate')).click(); } });
+$('mpName').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); $('mpJoin').click(); } });
 // 공개 주소 입구 — 빈 테이블(사람이 들어오는 대로 앉는다) + 이름·방 창. 혼자 판의 자리는 LOBBY 에 맡겨 둔다
 function mpLobby(){
   if (!LOBBY) LOBBY = {seats:S.seats, ns:NS, btn:S.btn};
   if (NS !== 6){ NS = 6; buildSeatEls(); }
-  S.seats = Array.from({length:6}, emptySeat);
-  Object.assign(S, {phase:'idle', board:[], pot:0, potVis:0, sbI:-1, bbI:-1, toAct:-1, post:null, banner:null, sd:null, review:null, wait:null, coach:{cls:'', text:'이름을 적고 방에 들어가면 테이블에 앉습니다'}});
+  S.seats = Array.from({length:6}, (x, i) => i === 3 ? Object.assign(emptySeat(), {dealer:true}) : emptySeat());
+  Object.assign(S, {phase:'idle', board:[], pot:0, potVis:0, sbI:-1, bbI:-1, toAct:-1, post:null, banner:null, sd:null, review:null, wait:null, coach:{cls:'', text:''}});
   document.body.classList.add('mp', 'lobby'); render();
   mpOpenSheet();
 }
@@ -3801,18 +3829,22 @@ $('mpSolo').onclick = () => {
   document.body.classList.remove('mp', 'lobby'); $('mpSheet').hidden = true; render();
   if (!S.tour && S.seats[0].stack < bbAmt()) askBuyin('칩이 부족합니다. 얼마로 앉을까요?', true);
 };
-// 초대 링크 — 폰이면 공유 창(카톡 등), 아니면 클립보드
+// 주소 보내기 — 폰이면 공유 창(카톡 등), 아니면 클립보드
 $('mpLink').onclick = async () => {
   if (!MP) return;
-  const b = $('mpLink'), url = location.origin + location.pathname + '?room=' + MP.code;
+  const b = $('mpLink'), url = location.origin + location.pathname.replace(/holdem\.html$/, '');
   try {
-    if (navigator.share){ await navigator.share({title:'홀덤', text:`홀덤 같이 쳐요 — 방 ${MP.code}`, url}); b.textContent = '보냈습니다'; }
+    if (navigator.share){ await navigator.share({title:'홀덤', text:'홀덤 같이 쳐요', url}); b.textContent = '보냈습니다'; }
     else { await navigator.clipboard.writeText(url); b.textContent = '복사했습니다'; }
-  } catch (e){ b.textContent = e && e.name === 'AbortError' ? '초대 링크 보내기' : url; }
-  setTimeout(() => { b.textContent = '초대 링크 보내기'; }, 4000);
+  } catch (e){ b.textContent = e && e.name === 'AbortError' ? '주소 보내기' : url; }
+  setTimeout(() => { b.textContent = '주소 보내기'; }, 4000);
 };
-$('mpJoin').onclick = () => mpEnter($('mpCode').value, false);
-$('mpCreate').onclick = () => mpEnter($('mpCode').value, true);
+$('mpJoin').onclick = () => mpEnter(MP_ROOM);
+document.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+  if (!MP || !S.wait) return; const o = opts(0); if (!o.canRaise) return;
+  MP.chipAdd = (MP.chipAdd || 0) + +b.dataset.v; S.size = clampTo(S.curBet + MP.chipAdd, o); sfx('chip', .3); render();
+});
+$('chipX').onclick = () => { if (!MP || !S.wait) return; MP.chipAdd = 0; S.size = opts(0).minTo; render(); };
 // 메뉴 줄 — 이 화면에서 연결이 되는지
 (async () => {
   const el = $('mpProbe'), say = t => { el.textContent = t; };
