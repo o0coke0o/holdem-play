@@ -580,6 +580,10 @@ body{margin:0}
   background:radial-gradient(ellipse at 50% 45%,var(--felt) 0%,var(--felt-deep) 88%);border:11px solid var(--rail);
   box-shadow:0 0 0 1px #000,inset 0 0 0 2px var(--brass-soft),inset 0 12px 40px rgba(0,0,0,.55),0 18px 40px rgba(0,0,0,.55)}
 .oval::after{content:"";position:absolute;inset:16px;border-radius:inherit;border:1px solid rgba(201,162,74,.18)}
+.felt.half .oval{border-radius:0 0 50% 50% / 0 0 40% 40%;border-top:0;background:radial-gradient(ellipse 80% 70% at 50% 62%,var(--felt) 0%,var(--felt-deep) 92%);
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,rgba(0,0,0,.25) 7%,rgba(0,0,0,.75) 22%,#000 40%);mask-image:linear-gradient(to bottom,transparent 0,rgba(0,0,0,.25) 7%,rgba(0,0,0,.75) 22%,#000 40%);
+  box-shadow:0 0 0 1px #000,inset 0 0 0 2px var(--brass-soft),inset 0 -12px 40px rgba(0,0,0,.45),0 18px 40px rgba(0,0,0,.55)}
+.felt.half .oval::after{top:0;border-top:0}
 .deck{position:absolute;left:calc(50% + 66px);top:calc(var(--cy) + clamp(38px,10.4vw,50px) * .55 + 2px);width:30px;height:42px;border-radius:4px;z-index:1;
   background:repeating-linear-gradient(45deg,rgba(255,236,214,.22) 0 1px,rgba(0,0,0,0) 1px 6px),repeating-linear-gradient(-45deg,rgba(255,236,214,.22) 0 1px,rgba(0,0,0,0) 1px 6px),radial-gradient(ellipse,#8e2234,#561120);
   box-shadow:inset 0 0 0 2px #fbf7ef,1px 1px 0 #d9cdb6,2px 2px 0 #561120,3px 3px 0 #d9cdb6,0 6px 10px rgba(0,0,0,.5)}
@@ -744,7 +748,10 @@ body{margin:0}
 .sitbtn:hover{background:var(--brass);color:var(--ink)}
 .prof p{margin:0;font-size:13px;line-height:1.6;color:var(--ivory)}
 /* 아래 칸 */
-.sizerow{display:grid;grid-template-columns:repeat(4,auto) minmax(0,1fr);gap:5px;align-items:center}
+.sizerow{display:grid;grid-template-columns:repeat(3,auto) auto minmax(0,1fr) auto;gap:5px;align-items:center}
+.szpm{width:34px;height:34px;border-radius:50%;border:1px solid var(--brass-soft);background:rgba(0,0,0,.35);color:var(--brass);font:800 20px/1 var(--ui);padding:0;cursor:pointer;touch-action:manipulation}
+.szpm:active:not(:disabled){background:var(--brass);color:var(--ink)}
+.szpm:disabled{opacity:.3}
 .sz{border:1px solid var(--brass-soft);background:rgba(0,0,0,.35);color:var(--ivory);border-radius:999px;padding:5px 10px;font-size:11.5px;font-weight:800;white-space:nowrap}
 .sz:disabled,.sizerow input:disabled{opacity:.3}
 .sizerow input{width:100%;min-width:0;margin:0;accent-color:#c9a24a}
@@ -759,7 +766,7 @@ body{margin:0}
 .mpf small{font-weight:600;color:var(--muted)}
 .mpf input{font:700 15px var(--ui);color:var(--ivory);background:rgba(0,0,0,.35);border:1px solid var(--brass-soft);border-radius:10px;padding:10px 12px}
 .mpf input:focus{outline:none;border-color:var(--brass)}
-body.mp .below,body.mp #eqRow,body.mp #bBuy,body.mp #bRab,body.mp .shuf,body.mp #rvPrev,body.mp #rvNext,body.mp .blindwrap,body.mp #tourPill,body.mp #tTable{display:none !important}
+body.mp .below,body.mp #eqRow,body.mp #bBuy,body.mp #tBuy,body.mp #bRab,body.mp .shuf,body.mp #rvPrev,body.mp #rvNext,body.mp .blindwrap,body.mp #tourPill,body.mp #tTable{display:none !important}
 body.mp #tools2 > :not(.mprow):not(#tSound){display:none !important}
 body.mp .btns.post{grid-template-columns:1fr 1.6fr}
 body.mp .seat .lab .sitbtn{font-size:11px}
@@ -834,6 +841,7 @@ body:not(.mp) #mpLink{display:none}
 .peekhint{display:none !important}
 .btns.acts .b kbd{font-variant-numeric:tabular-nums}
 .bankline .tnote{flex:1;text-align:center;font-size:11.5px;color:var(--muted);white-space:nowrap}
+#eqRow,body:not(.tourOn) .rail .bankline,body.tourOn .rail #bBuy{display:none !important}
 .eqrow{flex:none;display:grid;grid-template-columns:1.3fr 1fr 1fr 1.4fr;gap:4px;height:44px;box-sizing:border-box;padding:4px 6px;border-radius:10px;background:#120d0b;border:1px solid var(--brass-soft)}
 .eqrow .ec{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0}
 .eqrow .ec small{font-size:9px;color:var(--muted);font-weight:700;line-height:1}
@@ -937,6 +945,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
     <button class="tool" id="tCoach" aria-pressed="true">틀리면 알림</button>
     <button class="tool" id="tFast" aria-pressed="false">빠르게</button>
     <button class="tool" id="tSound" aria-pressed="true">소리</button>
+    <button class="tool" id="tBuy">칩 바꾸기</button>
     <button class="tool" id="tBlinds">블라인드 바꾸기</button>
     <button class="tool" id="tLast">직전 핸드</button>
     <button class="tool" id="tStats">기록</button>
@@ -944,7 +953,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
     <div class="nsrow tourrow"><span>토너먼트</span><button class="tool" data-tour="4">4테이블</button><button class="tool" data-tour="8">8테이블</button><button class="tool" data-tour="16">16테이블</button></div>
     <button class="tool" id="tTourQuit" hidden>지금 순위로 마치기</button>
     <div class="nsrow mprow"><span>친구 대전</span><button class="tool" id="mpOpen">친구 대전 만들기</button><button class="tool" id="mpLink">주소 보내기</button><button class="tool" id="mpEnd">게임 종료</button><span id="mpProbe" style="font-size:11px;color:var(--muted)">연결 확인 중…</span></div>
-    <div class="nsrow"><span>인원</span><button class="tool" data-ns="4">4인</button><button class="tool" data-ns="6">6인</button><button class="tool" data-ns="8">8인</button></div>
+    <div class="nsrow"><span>인원</span><button class="tool" data-ns="4">4인</button><button class="tool" data-ns="7">7인</button><button class="tool" data-ns="8">8인</button></div>
   </div>
 
   <div class="table">
@@ -968,8 +977,8 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
     <div class="bankline"><span>내 칩<b id="bankAmt">0</b></span><span class="tnote" id="tnote"></span><button id="bBuy">칩 바꾸기</button></div>
     <div class="chiprow" id="chipRow"><button class="chip" data-v="1" style="--c:var(--chip1)"><span>$1</span></button><button class="chip" data-v="2" style="--c:var(--chip2)"><span>$2</span></button><button class="chip" data-v="5" style="--c:var(--chip5)"><span>$5</span></button><button class="chip" data-v="10" style="--c:var(--chip10)"><span>$10</span></button><button class="chip" data-v="20" style="--c:var(--chip20)"><span>$20</span></button><button class="chipx" id="chipX" aria-label="쌓은 칩 지우기">↺</button></div>
     <div class="sizerow" id="sizeRow">
-      <button class="sz" data-f="min">최소</button><button class="sz" data-f="0.5">½팟</button><button class="sz" data-f="0.75">¾팟</button><button class="sz" data-f="1">팟</button>
-      <input type="range" id="sizeR" min="0" max="1000" step="1" value="0" aria-label="베팅 크기">
+      <button class="sz" data-f="0.5">½팟</button><button class="sz" data-f="0.75">¾팟</button><button class="sz" data-f="1">팟</button>
+      <button class="szpm" id="szM" aria-label="$1 내리기">−</button><input type="range" id="sizeR" min="0" max="1000" step="1" value="0" aria-label="베팅 크기"><button class="szpm" id="szP" aria-label="$1 올리기">+</button>
     </div>
     <div class="btns acts" id="actsRow">
       <button class="b" id="aFold">폴드<kbd>F</kbd></button>
@@ -1133,8 +1142,8 @@ const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 const VAL = {}; RANKS.forEach((r, i) => VAL[r] = i + 2);
 const RN = {14:'A',13:'K',12:'Q',11:'J'}; const rn = v => RN[v] || String(v);
 const KEY = 'he-practice-v1';
-let NS = 6;   // 자리 수(나 포함) — 4 · 6 · 8 중에서 고른다(메뉴)
-const NS_OK = [4, 6, 8];
+let NS = 7;   // 자리 수(나 포함) — 4 · 6 · 8 중에서 고른다(메뉴)
+const NS_OK = [4, 7, 8];
 // 카드: 덱에서 미끄러져 오는 시간 · 도착 뒤 뒤집기까지 쉼 · 뒤집는 시간 · 다음 장까지 간격
 const SLIDE = 380, PAUSE = 120, TURN = 360, GAP = 115;
 const BL = [[1,2],[2,4],[3,6]];   // 기본 $1/$2
@@ -2227,6 +2236,12 @@ document.querySelectorAll('.sz').forEach(b => b.onclick = () => {
   S.size = b.dataset.f === 'min' ? o.minTo : potSize(0, +b.dataset.f);
   render();
 });
+function szStep(d){ if (!S.wait) return; const o = opts(0); if (!o.canRaise) return; S.size = clampTo(clampTo(S.size, o) + d, o); render(); }
+for (const [id, d] of [['szM', -1], ['szP', 1]]){
+  const b = $(id); let t1 = 0, t2 = 0; const stop = () => { clearTimeout(t1); clearInterval(t2); };
+  b.onpointerdown = e => { e.preventDefault(); stop(); szStep(d); t1 = setTimeout(() => { t2 = setInterval(() => szStep(d), 70); }, 380); };
+  b.onpointerup = b.onpointerleave = b.onpointercancel = stop;
+}
 $('sizeR').oninput = e => {
   if (!S.wait) return;
   const o = opts(0), x = e.target.value / 1000;
@@ -2270,7 +2285,8 @@ function simOthers(t, all){ const {adv} = tourStep(t.T), bb = bbAmt(); for (cons
 const tourAllAlive = () => { const t = S.tour; if (!t) return []; return tourAlive().map(p => ({name:p.name, stack:p.stack, me:p.me})).concat((t.others || []).flatMap(tb => tb.ps.filter(q => q.stack > 0))); };
 const TOUR_LVL = 10;   // 라운드 안에서 10판마다 블라인드 ×1.5(안 오르면 한 라운드가 백 판 넘게 걸렸다)
 const tourBlinds = (r, h = 0) => { const b = 2 ** (r - 1), k = Math.round(b * 1.5 ** Math.floor(h / TOUR_LVL)); return [k, 2 * k]; };   // 라운드 시작: 1R $1/$2 → 2R $2/$4 → 3R $4/$8
-function tourStep(T){ if (T <= 1) return {next:0, adv:1}; const f = NS % 4 === 0 && T % 4 === 0 ? 4 : 2; return {next:T / f, adv:NS / f}; }
+const tourNS = () => S.tour || NS % 2 === 0 ? NS : 8;   // 7인 테이블에서 토너먼트를 열면 8인으로 친다
+function tourStep(T){ if (T <= 1) return {next:0, adv:1}; const n = tourNS(), f = n % 4 === 0 && T % 4 === 0 ? 4 : 2; return {next:T / f, adv:n / f}; }
 function tourRounds(T){ let n = 1; while (T > 1){ T = tourStep(T).next; n++; } return n; }
 const tourAlive = () => S.seats.filter(p => !p.empty && p.stack > 0);
 const tourName = t => t.T === 1 ? '최종 테이블' : `${t.T}개 테이블`;
@@ -2284,7 +2300,8 @@ function startTour(T){
   if (S.phase === 'play'){ S.coach = {cls:'miss', text:'이 핸드가 끝난 뒤에 토너먼트를 시작할 수 있습니다'}; render(); return; }
   const start = 200, me = S.seats[0], fee = TOUR_FEE[T] || 0;   // 모두 $200 칩(1라운드 빅 블라인드 100개)으로 시작 — 칩은 참가비와 따로다
   if (me.stack + S.cents < fee){ S.coach = {cls:'miss', text:`참가비 ${fmt(fee)}가 모자랍니다 — 지갑 ${fmt(me.stack + S.cents)} · ${fmt(fee - me.stack - S.cents)} 더 불려 오세요`}; render(); return; }
-  S.tour = {T0:T, T, round:1, rounds:tourRounds(T), field:T * NS, start, fee, prizes:tourPrizes(T), cash:me.stack - fee, done:null, pendingAdv:false, hands:0, rh:0};
+  const ns0 = NS % 2 ? NS : 0; if (ns0) NS = 8;
+  S.tour = {ns0, T0:T, T, round:1, rounds:tourRounds(T), field:T * NS, start, fee, prizes:tourPrizes(T), cash:me.stack - fee, done:null, pendingAdv:false, hands:0, rh:0};
   walletSet(S.tour.cash + S.cents);   // 참가비는 바로 지갑에서 빠진다(토너먼트 중에 블랙잭으로 가도 같은 지갑)
   me.stack = start;
   S.seats = [me].concat(POOL.slice(0, NS - 1).map(b => mkSeat(b, start)));
@@ -2622,7 +2639,7 @@ function tourLogHTML(){
 }
 function exitTour(){
   const t = S.tour, me = S.seats[0];
-  S.tour = null;
+  S.tour = null; if (t.ns0) NS = t.ns0;
   const prize = t.done ? tourPrize(t, t.done.place) : 0, back = Math.max(0, t.cash + prize);   // 토너먼트 칩은 돈이 아니다 — 순위 상금만 지갑으로 간다
   if (t.done) tourLogAdd({at:Date.now(), T0:t.T0, field:t.field, place:t.done.place, win:!!t.done.win, quit:!!t.done.quit, round:t.round, rounds:t.rounds, hands:t.hands, fee:t.fee || 0, prize, gain:prize - (t.fee || 0)});
   const v = back >= bbAmt() ? back : 100 * bbAmt();   // 손님은 모두 같은 금액으로 앉는다 · 나는 지갑 그대로(공짜 칩 없음)
@@ -2634,7 +2651,7 @@ function exitTour(){
 }
 function syncTour(){
   const on = !!S.tour;
-  document.querySelectorAll('[data-tour]').forEach(b => { b.disabled = on; b.textContent = `${b.dataset.tour}테이블 · ${b.dataset.tour * NS}명`; });
+  document.querySelectorAll('[data-tour]').forEach(b => { b.disabled = on; b.textContent = `${b.dataset.tour}테이블 · ${b.dataset.tour * tourNS()}명`; });
   $('tTourQuit').hidden = !on;
   document.querySelectorAll('[data-ns]').forEach(b => b.disabled = on);
 }
@@ -2651,13 +2668,16 @@ function buildSeatEls(){
 // 8인은 반 칸 비켜서 시작해 아래·위·왼쪽·오른쪽에 둘씩 앉는다
 let seatKey = '';
 function layoutSeats(){
-  const f = $('felt'), W = f.clientWidth, H = f.clientHeight, key = `${W}x${H}x${NS}`;
+  const f = $('felt'), W = f.clientWidth, H = f.clientHeight, key = `${W}x${H}x${NS}x${!MP && !LOBBY}`;
   if (!W || !H || key === seatKey || !$('seat0') || !$('seat0')._plate) return;
   seatKey = key;
   f.classList.toggle('ns8', NS === 8);   // 8인: 내 카드·보드를 조금 작게
+  const HALF = !MP && !LOBBY; f.classList.toggle('half', HALF);   // 혼자 치기: 세로 타원의 아래 절반 · 자리는 나 + 양옆 줄
   // 펠트 타원: 폭은 판 전체, 높이는 폭의 0.6 안팎(위·아래 손님 자리를 남긴다)
-  const oh = Math.round(Math.max(W * 0.6, Math.min(W * 0.74, H - 190))), B0 = oh / 2 + 32,   // 타원은 줄이지 않는다(칩·보드가 펠트 위에 서야 한다)
-    cy = Math.round(Math.min(H - B0 - 30, Math.max(H / 2, B0 + 64))), ot = cy - oh / 2;   // 맨 위 자리 카드(64)가 판 안에 들게 내리되 맨 아래 내 자리가 넘치지 않는 데까지   // 맨 위 자리는 이름표 위로 카드가 서니(약 64px) 그만큼 판을 내린다 — 맨 아래 내 자리가 넘치지 않는 데까지
+  let oh = Math.round(Math.max(W * 0.6, Math.min(W * 0.74, H - 190))), B0 = oh / 2 + 32,   // 타원은 줄이지 않는다(칩·보드가 펠트 위에 서야 한다)
+    cy = Math.round(Math.min(H - B0 - 30, Math.max(H / 2, B0 + 64))), ot = cy - oh / 2;
+  const HP = HALF ? {top:0, hh:H - 62} : null;   // 윗변 = 판 맨 위(흐려지는 쪽) · 아랫변 = 내 이름표 위
+  if (HP){ oh = HP.hh; ot = HP.top; cy = Math.round(HP.top + HP.hh * 0.56); }   // 보드 = 가운데 줄과 아래 줄 사이   // 맨 위 자리 카드(64)가 판 안에 들게 내리되 맨 아래 내 자리가 넘치지 않는 데까지   // 맨 위 자리는 이름표 위로 카드가 서니(약 64px) 그만큼 판을 내린다 — 맨 아래 내 자리가 넘치지 않는 데까지
   f.style.setProperty('--cy', cy + 'px'); f.style.setProperty('--ot', ot + 'px'); f.style.setProperty('--oh', oh + 'px');
   // 자리를 잇는 길 = 타원보다 조금 큰 타원(옆은 난간 위, 위·아래는 난간 바깥)
   const cx = W / 2, A = (cx - 42) / (NS === 8 ? Math.cos(Math.PI / 8) : NS === 6 ? Math.sin(Math.PI / 3) : 1), B = oh / 2 + 32;   // 양옆 손님 이름표 가운데가 화면 끝에서 42px
@@ -2665,12 +2685,17 @@ function layoutSeats(){
   for (let k = 0; k <= M; k++){ const t = 2 * Math.PI * k / M; pts.push([cx - A * Math.sin(t), cy + B * Math.cos(t)]); }   // 아래 가운데에서 시계 방향
   const acc = [0]; for (let k = 1; k < pts.length; k++) acc.push(acc[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]));
   const L = acc[acc.length - 1], step = L / NS, off = NS === 8 ? -step / 2 : 0;
+  // 절반 테이블: 나는 아래 가운데, 손님은 왼쪽 줄(아래→위) · 오른쪽 줄(위→아래) — 시계 방향 순서는 그대로
+  const nl = Math.ceil((NS - 1) / 2), nr = NS - 1 - nl, HA = cx - 40, HB = HP ? HP.hh + 32 : 0;
+  const hpAt = i => { if (!i) return [cx, HP.top + HB]; const lf = i <= nl, k = lf ? i - 1 : i - 1 - nl, n = lf ? nl : nr, q = n > 1 ? k / (n - 1) : .5, th = (lf ? 46 + 34 * q : 80 - 34 * q) * Math.PI / 180;   // 양옆 줄은 가장자리에 붙여 보드 다섯 장 자리를 비운다
+    const y = HP.top + HB * Math.cos(th), yc = HP.top + HP.hh * 0.6, u = Math.max(0, (y - yc) / (HP.hh * 0.4)), w = (W / 2) * Math.sqrt(Math.max(0, 1 - u * u));   // 그 높이의 테두리 폭(위 60%는 곧고 아래만 둥글다)
+    return [cx + (lf ? -1 : 1) * Math.max(0, w - 38), y]; };   // 이름표 가운데가 테두리에서 38px 안쪽
   const at = sv => { sv = ((sv % L) + L) % L; let k = 1; while (k < acc.length - 1 && acc[k] < sv) k++; const r = (sv - acc[k - 1]) / Math.max(1e-6, acc[k] - acc[k - 1]); return [pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * r, pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * r]; };
   const boxes = [], seats = [];
   for (let i = 0; i < NS; i++){
     const el = $('seat' + i); if (!el || !el._plate) continue;
-    const [x, y] = at(off + i * step);
-    el.dataset.pos = i === 0 ? '0' : y < cy - oh * 0.3 ? 't' : y > cy + oh * 0.3 ? 'b' : x < cx ? (y < cy ? '2' : '1') : (y < cy ? '3' : '4');
+    const [x, y] = HP ? hpAt(i) : at(off + i * step);
+    el.dataset.pos = i === 0 ? '0' : !HP && y < cy - oh * 0.3 ? 't' : !HP && y > cy + oh * 0.3 ? 'b' : x < cx ? (y < cy ? '2' : '1') : (y < cy ? '3' : '4');
     const pc = el._plate.offsetTop + el._plate.offsetHeight / 2, w = el.offsetWidth, h = el.offsetHeight;
     Object.assign(el.style, {left:x + 'px', top:(y - pc) + 'px', right:'auto', bottom:'auto', margin:'0', translate:'-50% 0'});
     seats.push({el, x, y, pc, w, h});
@@ -2683,7 +2708,8 @@ function layoutSeats(){
   const pw = f.querySelector('.potwrap'); boxes.push([cx - 92, pw.offsetTop - 4, 184, 42]);   // 팟 칩 기둥 + 「팟 $00」 글씨가 다 서는 폭
   const dk = $('deck'); boxes.push([dk.offsetLeft, dk.offsetTop, dk.offsetWidth + 3, dk.offsetHeight + 3]);
   boxes.push([8, H - 48, 112, 42]);   // 왼쪽 아래 [셔플] 단추 자리(판 중에만 보이지만 늘 비워 둔다)
-  const inOval = (mx, my) => ((mx - cx) / (W / 2 - 6)) ** 2 + ((my - cy) / (oh / 2 - 4)) ** 2 <= 1;
+  const inOval = HP ? (mx, my) => { const yc = HP.top + HP.hh * 0.6; return my >= HP.top + 4 && (my <= yc ? Math.abs(mx - cx) <= W / 2 - 6 : ((mx - cx) / (W / 2 - 6)) ** 2 + ((my - yc) / (HP.hh * 0.4 - 4)) ** 2 <= 1); }   // 위 60%는 곧은 옆면 · 아래 40%만 둥글다
+    : (mx, my) => ((mx - cx) / (W / 2 - 6)) ** 2 + ((my - cy) / (oh / 2 - 4)) ** 2 <= 1;
   let loose = false;   // 펠트 안에 빈 곳이 없으면 두 번째 바퀴는 펠트 밖(판 안)까지 본다
   const hit = (r) => (loose ? r[0] < 0 || r[0] + r[2] > W || r[1] < 0 || r[1] + r[3] > H : !inOval(r[0] + r[2] / 2, r[1] + r[3] / 2)) || boxes.some(q => r[0] < q[0] + q[2] && q[0] < r[0] + r[2] && r[1] < q[1] + q[3] && q[1] < r[1] + r[3]);
   const place = (sv, bw, bh, rot0) => {
@@ -2796,12 +2822,12 @@ function render(light){
   setHTML($('potAmt'), pt > 0 && S.phase === 'play' ? `팟 ${fmt(pt)}` : '');
   const me = S.seats[0], s = sbAmt(), b = bbAmt();
   $('bankAmt').textContent = fmt(me.stack);
-  const T = S.tour;
+  const T = S.tour; document.body.classList.toggle('tourOn', !!T);
   setHTML($('tnote'), T ? `토너먼트 ${T.round}/${T.rounds}R · ${tourName(T)} · 남은 ${tourAlive().length}명${T.T > 1 ? ` → ${tourStep(T.T).adv}명` : ''}` : `${MP && MP.T ? MP.T.ns : LOBBY ? 5 : NS}인 · 블라인드 ${fmt(s)}/${fmt(b)}`);
   setHTML($('blindPill'), `${T ? '' : 'NL '}${fmt(sbAmt())}/${fmt(bbAmt())}`);
   setHTML($('feltRule'), `NO LIMIT · BLINDS ${fmt(s)}/${fmt(b)}`);
   $('bBuy').disabled = S.phase === 'play' || !!VIEW;
-  $('tBlinds').disabled = S.phase === 'play';
+  $('tBlinds').disabled = S.phase === 'play'; $('tBuy').disabled = S.phase === 'play' || !!VIEW || !!S.tour;
   renderActs();
   renderTourPill(); renderFloor(); markChart();
   if (!light){ renderCoach(); renderBanner(); renderEq(); }
@@ -2830,7 +2856,7 @@ function renderActs(){
   setHTML($('aAll'), `올인<kbd>${my ? fmt(p.stack + p.bet) : 'A'}</kbd>`);
   setHTML($('aFold'), lockB ? `미리 폴드<kbd>빅 블라인드 · 안 됨</kbd>` : pre ? (S.preFold ? '폴드 예약 ✓<kbd>차례 오면 바로</kbd>' : '미리 폴드<kbd>F</kbd>') : '폴드<kbd>F</kbd>');
   const can = my && o.canRaise;
-  document.querySelectorAll('.sz,.chip,#chipX').forEach(b => b.disabled = !can);
+  document.querySelectorAll('.sz,.chip,#chipX,.szpm').forEach(b => b.disabled = !can);
   const r = $('sizeR'); r.disabled = !can;
   if (can && document.activeElement !== r){ const x = o.maxTo > o.minTo ? Math.sqrt((clampTo(S.size, o) - o.minTo) / (o.maxTo - o.minTo)) : 0; r.value = Math.round(x * 1000); }
 }
@@ -2960,9 +2986,9 @@ function renderTourPill(){
 }
 function openTourJoin(){
   const w = myMoney();
-  $('tjNote').textContent = S.phase === 'play' ? '지금 핸드가 끝나면 참가할 수 있습니다.' : `지갑 ${fmt(w)} · 참가비를 내면 모두 $200 칩으로 시작합니다. 테이블마다 상위 몇 명이 다음 라운드로 가고, 블라인드는 라운드마다 두 배가 됩니다. 상금은 참가비 × 인원을 상위 약 1/8이 나눕니다. 지금 ${NS}인 테이블 기준입니다.`;
+  $('tjNote').textContent = S.phase === 'play' ? '지금 핸드가 끝나면 참가할 수 있습니다.' : `지갑 ${fmt(w)} · 참가비를 내면 모두 $200 칩으로 시작합니다. 테이블마다 상위 몇 명이 다음 라운드로 가고, 블라인드는 라운드마다 두 배가 됩니다. 상금은 참가비 × 인원을 상위 약 1/8이 나눕니다. 지금 ${tourNS()}인 테이블 기준입니다.`;
   $('tjOpts').innerHTML = TOUR_T.map(T => { const fee = TOUR_FEE[T], pr = tourPrizes(T), lack = fee - w;
-    return `<button data-tj="${T}"${S.phase === 'play' || lack > 0 ? ' disabled' : ''}><b><i class="tjc">${(TOUR_NAME[T] || ['', ''])[1]}</i><span class="tn${tourTitle(T).length > 12 ? ' long' : ''}">${tourTitle(T)}</span><small class="fee">${(TOUR_NAME[T] || [])[2] ? `<em class="ven">${TOUR_NAME[T][2]}</em>` : ''}<em>${T}테이블</em>참가비 ${fmt(fee)}</small></b><span>${T * NS}명 · ${tourRounds(T)}라운드 · 상위 ${tourStep(T).adv}명 진출<br>1위 ${fmt(pr[0])} · 상금 ${pr.length}위까지${lack > 0 ? `<em class="lack">${fmt(lack)} 더 있어야 참가</em>` : ''}</span></button>`; }).join('');
+    return `<button data-tj="${T}"${S.phase === 'play' || lack > 0 ? ' disabled' : ''}><b><i class="tjc">${(TOUR_NAME[T] || ['', ''])[1]}</i><span class="tn${tourTitle(T).length > 12 ? ' long' : ''}">${tourTitle(T)}</span><small class="fee">${(TOUR_NAME[T] || [])[2] ? `<em class="ven">${TOUR_NAME[T][2]}</em>` : ''}<em>${T}테이블</em>참가비 ${fmt(fee)}</small></b><span>${T * tourNS()}명 · ${tourRounds(T)}라운드 · 상위 ${tourStep(T).adv}명 진출<br>1위 ${fmt(pr[0])} · 상금 ${pr.length}위까지${lack > 0 ? `<em class="lack">${fmt(lack)} 더 있어야 참가</em>` : ''}</span></button>`; }).join('');
   $('tjLog').innerHTML = tourLogHTML();
   $('tourJoin').hidden = false;
 }
@@ -3113,6 +3139,7 @@ $('blindPill').onclick = e => {
 };
 $('blPop').onclick = e => { e.stopPropagation(); const b = e.target.closest('[data-bl]'); if (!b) return; $('blPop').hidden = true; setBlinds(+b.dataset.bl); };
 document.addEventListener('click', () => { $('blPop').hidden = true; });
+$('tBuy').onclick = () => $('bBuy').onclick();
 $('tBlinds').onclick = () => {
   if (S.phase === 'play' || S.tour) return;
   S.bl = (S.bl + 1) % BL.length;
