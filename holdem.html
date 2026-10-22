@@ -798,7 +798,7 @@ body.mp .below,body.mp #eqRow,body.mp #bBuy,body.mp #tBuy,body.mp #bRab,body.mp 
 body.mp #tools2 > :not(.mprow):not(#tSound){display:none !important}
 body.mp .btns.post{grid-template-columns:1fr 1.6fr}
 body.mp .seat .lab .sitbtn{font-size:11px}
-body.lobby #postRow,body.lobby #mpClose{display:none !important}
+body.lobby #postRow{display:none !important}
 .coachwrap.blank{visibility:hidden}
 #profGrid{grid-template-columns:repeat(2,1fr)}   /* 같이 친 핸드·참여·레이즈·눈치 — 2×2 */
 #mpEnd{display:none}
@@ -1062,7 +1062,9 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
     <div style="display:flex;justify-content:space-between;align-items:center"><h2>테이블 바꾸기</h2><button class="tool" id="tableClose">닫기</button></div>
     <div class="tbls">
       <button class="tbl" data-t="bj"><b>Blackjack</b><span>3인 테이블 · 승률표로 정석 연습</span></button>
-      <button class="tbl on" data-t="he"><b>Texas Hold'em</b><span>노리밋 · 4·6·8인 · 승률·팟 오즈 연습</span></button>
+      <button class="tbl on" data-t="he"><b>Texas Hold'em</b><span>노리밋 · 4·7·8인 · 승률·팟 오즈 연습</span></button>
+      <button class="tbl" data-t="rd"><b>Hand Reading</b><span>유명 선수 스타일 1~3명 · 상대 패 읽기 훈련</span></button>
+      <button class="tbl" data-t="mp"><b>Friend Match</b><span>친구와 실시간 대전 · 이름을 적고 앉기</span></button>
     </div>
   </div>
 </div>
@@ -3283,10 +3285,12 @@ $('tableSheet').addEventListener('click', e => {
   if (e.target.id === 'tableSheet'){ $('tableSheet').hidden = true; return; }
   const b = e.target.closest('.tbl'); if (!b) return;
   $('tableSheet').hidden = true;
-  if (b.dataset.t !== 'bj') return;
+  const t = b.dataset.t; if (t === 'he' || (t === 'mp' && MP)) return;
   if (VIEW) exitView();
   if (S.phase === 'play') abandonHand();
   save();
+  if (t === 'mp'){ mpLobby(); return; }   // Friend Match — 이름 창이 뜨고, 닫으면 혼자 연습으로 돌아온다
+  if (t === 'rd'){ location.href = 'read.html'; return; }
   let url = null; try { url = localStorage.getItem('casino-bj-url'); } catch (e) {}
   location.href = (url || './').split('#')[0] + '#bj';
 });
@@ -3696,7 +3700,7 @@ const MP_HOST_HASH = ['dd6774454a378fcdc2dbe8c7224fc790f71ddfca3e0af68402e162972
 try { const q = new URLSearchParams(location.search).get('host'); if (q){ localStorage.setItem('hp-mp-hostkey', q); history.replaceState(null, '', location.pathname); } } catch (e) {}
 const mpHostKey = () => { try { return localStorage.getItem('hp-mp-hostkey') || ''; } catch (e) { return ''; } };
 async function mpHostOk(k){ try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(k)); return MP_HOST_HASH.includes([...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('')); } catch (e) { return false; } }   // 테이블은 하나 — 방 이름이 없다
-const MP_PUBLIC = (/github\.io$/.test(location.hostname) || /[?&]mp\b/.test(location.search)) && !mpHostKey();   // 방장 폰은 늘 보던 연습 홀덤으로 연다   // 공개 주소 = 친구 대전 입구(혼자 연습은 claude.ai 쪽) · ?mp 는 로컬 시험용
+const MP_PUBLIC = /[?&]mp\b/.test(location.search) && !mpHostKey();   // 2026-10-23 David «로그인 화면 없애줘» — 공개 주소도 바로 혼자 연습   // 방장 폰은 늘 보던 연습 홀덤으로 연다   // 공개 주소 = 친구 대전 입구(혼자 연습은 claude.ai 쪽) · ?mp 는 로컬 시험용
 if (!MP_PUBLIC && !S.tour && S.seats[0].stack < bbAmt()) askBuyin('칩이 부족합니다. 얼마로 앉을까요?', true);
 window.__he = S;
 /* ---------- 친구 대전 ----------
@@ -4077,7 +4081,7 @@ function mpOpenSheet(){
   if (!$('mpName').value) setTimeout(() => $('mpName').focus(), 60);
 }
 $('mpOpen').onclick = () => { if (MP){ mpLeave(); return; } mpOpenSheet(); };
-$('mpClose').onclick = () => { $('mpSheet').hidden = true; };
+$('mpClose').onclick = () => { if (LOBBY && !MP) mpToSolo(); else $('mpSheet').hidden = true; };   // 입구에서 닫기 = 혼자 연습으로
 $('mpSheet').addEventListener('click', e => { if (e.target.id === 'mpSheet' && !(LOBBY && !MP)) $('mpSheet').hidden = true; });
 $('mpName').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); $('mpJoin').click(); } });
 // 공개 주소 입구 — 빈 테이블(사람이 들어오는 대로 앉는다) + 이름·방 창. 혼자 판의 자리는 LOBBY 에 맡겨 둔다
@@ -4129,6 +4133,7 @@ $('chipX').onclick = () => { if (!MP || !S.wait) return; MP.chipAdd = 0; S.size 
 })();
 if (!mpHostKey()) $('mpOpen').textContent = '테이블에 앉기';
 if (MP_PUBLIC) mpLobby();
+else if (location.hash === '#fm'){ history.replaceState(null, '', location.pathname + location.search); mpLobby(); }   // 다른 테이블의 Friend Match 에서 넘어옴
 { const last = +mpLS('hp-mp-last') || 0, nm = mpLS('hp-mp-name'); if (nm && Date.now() - last < 6 * 3600e3) setTimeout(() => { if (MP) return; $('mpName').value = nm; mpEnter(MP_ROOM); }, 400); }
 function mpBotPick(at){
   if (!MP || !MP.T || MP.T.host !== MP.pid) return;
