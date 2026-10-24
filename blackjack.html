@@ -380,6 +380,7 @@ body{margin:0}
 .spotamt{position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ivory);white-space:nowrap;
   text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .fly{position:fixed;z-index:30;pointer-events:none;width:38px;height:38px;margin:-19px 0 0 -19px}
+.bill{position:fixed;z-index:31;pointer-events:none;width:54px;height:26px;margin:-13px 0 0 -27px;border-radius:3px;background:linear-gradient(135deg,#9fd49a,#5e9a5a);border:1px solid #2f5d2c;box-shadow:0 2px 6px rgba(0,0,0,.5),inset 0 0 0 2px rgba(255,255,255,.25);color:#173a14;font:900 12px/26px var(--ui,system-ui);text-align:center;letter-spacing:.02em}
 /* 폰: 스크롤 없이 한 화면(데스크탑은 그대로) — 앱 제목줄이 이름을 보여 주므로 제목·머리줄·규칙 알약은 숨기고, 잘 안 쓰는 단추는 [메뉴] 안으로 */
 .menuBtn{display:none}
 @media (max-width:520px){
@@ -714,7 +715,7 @@ body{margin:0}
   <div class="table">
     <div class="felt">
       <div class="shoe" id="shoe" aria-hidden="true"></div>
-      <div class="tray" id="tray" role="button" tabindex="0" title="칩 바꾸기 — 현금을 내고 칩을 받습니다" aria-label="칩 바꾸기"><i style="--c:var(--chip1)"></i><i style="--c:var(--chip5)"></i><i style="--c:var(--chip20)"></i><i style="--c:var(--chip100)"></i><i style="--c:var(--chip20)"></i></div>
+      <div class="tray" id="tray" role="button" tabindex="0" title="+$100 받기" aria-label="+$100 받기"><i style="--c:var(--chip1)"></i><i style="--c:var(--chip5)"></i><i style="--c:var(--chip20)"></i><i style="--c:var(--chip100)"></i><i style="--c:var(--chip20)"></i></div>
       <div class="zone dealer">
         <div class="zone-lbl">DEALER</div>
         <div class="hands" id="dealer"></div>
@@ -745,7 +746,7 @@ body{margin:0}
         <b>RC</b> 지금까지 나온 카드 점수의 합(새로 섞으면 0)<br>
         <b>TC</b> RC ÷ 남은 덱 수 — 남은 카드가 얼마나 기울었는지<br>
         <b>쓰는 법</b> TC가 높을수록(+2 이상) 10·A가 많이 남아 블랙잭·더블이 잘 터져 플레이어가 유리합니다 → 판돈을 키울 때. TC가 음수면 작은 카드가 많이 남아 딜러가 유리 → 판돈을 줄일 때.
-      </span></span><button id="bBuy">칩 다시 받기</button><span class="postbtns" id="postBtns" hidden><span class="mchips" id="mChips"></span><button class="pstop" id="bStop" hidden>그만</button><button class="pgo" id="bGo">시작</button></span></div>
+      </span></span><button id="bBuy">+$100 받기</button><span class="postbtns" id="postBtns" hidden><span class="mchips" id="mChips"></span><button class="pstop" id="bStop" hidden>그만</button><button class="pgo" id="bGo">시작</button></span></div>
     <div id="betRail">
       <div class="betline">
         <div class="betamt">베팅<b id="betAmt">0</b></div>
@@ -804,7 +805,7 @@ body{margin:0}
     <h3>최근 정석과 다르게 한 것</h3>
     <ul class="miss" id="sMiss"></ul>
     <div class="row">
-      <button class="tool" id="sRefill">칩 다시 받기</button>
+      <button class="tool" id="sRefill">+$100 받기</button>
       <button class="tool" id="sReset">기록 지우기</button>
     </div>
   </div>
@@ -1247,7 +1248,7 @@ async function payOut(){
     S.pay = {keep, win, bonus, fresh:true}; render(); S.pay.fresh = false;
   }
   S.busy = false; render();
-  if (S.bank < 1) askBuyin(S.mode === 'drill' ? '칩이 다 떨어졌습니다. 얼마로 다시 시작할까요?' : '');
+  if (S.bank < 1){ S.coach = {cls:'tip', text:'칩이 다 떨어졌습니다 — 딜러 칩 상자를 누를 때마다 +$100'}; render(); }   // 창 없이(2026-10-25 David)
 }
 
 /* ---------- render ---------- */
@@ -1680,7 +1681,7 @@ function render(){
   } else {
   co._h = null;
   co.className = 'coach' + (S.coach.cls ? ' ' + S.coach.cls : '');
-  co.textContent = S.coach.text || (S.phase === 'play' ? (S.dealer.length ? `딜러 업카드 ${upName()} · 어떻게 하시겠어요?` : '')  : S.phase === 'bet' ? (S.bank <= 0 ? '칩이 다 떨어졌습니다. 아래 「칩 다시 받기」를 누르세요.' : (S.mode === 'drill' ? '표 연습: 정석이 아닌 선택을 하면 그 손은 바로 패배입니다.' : ba ? ba.plain : '칩을 테이블로 던지고 시작을 누르세요. 칩 없이 시작하면 지난 금액으로 칩니다.')) : '');
+  co.textContent = S.coach.text || (S.phase === 'play' ? (S.dealer.length ? `딜러 업카드 ${upName()} · 어떻게 하시겠어요?` : '')  : S.phase === 'bet' ? (S.bank <= 0 ? '칩이 다 떨어졌습니다. 딜러 칩 상자나 「+$100 받기」를 누를 때마다 +$100.' : (S.mode === 'drill' ? '표 연습: 정석이 아닌 선택을 하면 그 손은 바로 패배입니다.' : ba ? ba.plain : '칩을 테이블로 던지고 시작을 누르세요. 칩 없이 시작하면 지난 금액으로 칩니다.')) : '');
   }
 
   const betting = S.phase === 'bet';
@@ -1854,7 +1855,7 @@ function setMode(m){
   if (S.mode === m || S.phase !== 'bet' || S.busy) return;
   save(); S.mode = m; const isNew = (() => { try { return !localStorage.getItem(KEY + '-' + m); } catch (e) { return true; } })();
   loadMode(); S.bet = 0; S.betChips = []; S.pay = null;
-  if (isNew) setTimeout(() => askBuyin(`${MODE[m]} 모드 시작 칩을 고르세요.`), 0);
+  if (isNew && S.bank < 1) S.bank = 100;   // 새 모드는 창 없이 $100으로 시작
   S.hands = []; S.dealer = []; S.banner = null;
   S.coach = {cls:'', text: m === 'drill' ? '표 연습: 정석이 아닌 선택을 하면 그 손은 바로 패배입니다. 칩·기록은 실전과 따로 셉니다.' : '실전: 정석이 아니어도 카드는 그대로 랜덤으로 흘러갑니다.'};
   save(); render();
@@ -1876,7 +1877,7 @@ function askBuyin(note){
     const w = S.fresh ? 0 : S.bank;
     $('buyWal').hidden = false; $('buyWal').innerHTML = `<small>지갑 · 홀덤과 같은 지갑</small><b>${fmt(w)}</b>`;
     note = S.fresh ? `처음에는 ${fmt(REFILL)}로 시작합니다.` : broke ? `${fmt(REFILL)} 밑이라 ${fmt(REFILL)}으로 다시 채울 수 있습니다.` : `${fmt(REFILL)} 이상이라 그대로 칩니다 — ${fmt(REFILL)} 밑으로 내려가면 다시 채울 수 있습니다.`;
-    note += ' 홀덤 토너먼트 참가비는 $200 · $500 · $1,000입니다.';
+    note += ' 홀덤 토너먼트 참가비는 $200 · $1,000 · $10,000입니다.';
     $('buyOpts').classList.add('solo');
     $('buyOpts').innerHTML = broke ? `<button data-v="${REFILL}">${fmt(REFILL)}으로 채우기<small>+${fmt(Math.round((REFILL - w) * 100) / 100)}</small></button>` : `<button disabled>${fmt(REFILL)}으로 채우기<small>${fmt(REFILL)} 밑일 때</small></button>`;
   } else { $('buyWal').hidden = true; $('buyOpts').classList.remove('solo'); $('buyOpts').innerHTML = BUY_DRILL; }
@@ -1896,10 +1897,27 @@ $('buyOpts').addEventListener('click', e => {
 function closeBuyin(){ if (!S.buyForced) $('buyin').hidden = true; }
 $('buyCancel').onclick = closeBuyin;
 $('buyin').addEventListener('click', e => { if (e.target.id === 'buyin') closeBuyin(); });
-$('sRefill').onclick = () => askBuyin(S.mode === 'drill' ? '지금 칩을 버리고 새로 받습니다. 얼마로 할까요?' : '');
-$('bBuy').onclick = () => askBuyin(S.mode === 'drill' ? '지금 칩을 버리고 새로 받습니다. 얼마로 할까요?' : '');
-// 딜러 칩 받침을 누르면: 현금을 내고 칩으로 바꾸는 창(쉬는 중일 때만)
-const cashIn = () => { if (S.phase === 'bet' && !S.busy) askBuyin('현금을 내고 칩으로 바꿉니다. 지금 칩은 반납하고, 얼마를 받을까요?'); };
+$('sRefill').onclick = () => cashIn();
+$('bBuy').onclick = () => cashIn();
+// 딜러 칩 받침을 누르면 누를 때마다 +$100 — 창 없이, 내가 $100 지폐를 내밀고 딜러가 $100어치 칩을 밀어 준다
+// (2026-10-25 David «쓸데없이 팝업 띄울 필요 없이» · «내가 얼마를 갖고 있던 상관없이 버튼 클릭할 때마다 계속해서 100불이 들어오게»)
+// 판 중이어도 건 칩이 아니라 보유 칩(S.bank)에만 더한다
+const cashIn = () => {
+  S.bank = Math.round((S.bank + 100) * 100) / 100; S.fresh = false; save();
+  const from = $('bankAmt').getBoundingClientRect(), tray = $('tray').getBoundingClientRect(), rack = $('rack').getBoundingClientRect();
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches || !document.body.animate;
+  if (calm){ sfx('handle', 0.6); render(); return; }
+  const bill = document.createElement('div'); bill.className = 'bill'; bill.textContent = '$100';
+  bill.style.left = (from.left + from.width / 2) + 'px'; bill.style.top = (from.top + from.height / 2) + 'px';
+  document.body.appendChild(bill);
+  const dx = tray.left + tray.width / 2 - from.left - from.width / 2, dy = tray.top + tray.height / 2 - from.top - from.height / 2;
+  bill.animate([{transform:'translate(0,0) rotate(-6deg)', opacity:0}, {transform:`translate(${dx * .15}px,${dy * .15}px) rotate(-4deg)`, opacity:1, offset:.15},
+    {transform:`translate(${dx}px,${dy}px) rotate(8deg) scale(.7)`, opacity:0}], {duration:420, easing:'cubic-bezier(.4,0,.6,1)', fill:'forwards'}).onfinish = () => bill.remove();
+  sfx('handle', 0.6);
+  const to = rack.width ? rack : from;
+  [20, 20, 20, 20, 20].forEach((v, i) => flyChip(tray, to, v, 360 + i * 50, 40));   // $20 다섯 개 = $100
+  setTimeout(render, 360 + 5 * 50 + 320);
+};
 $('tray').onclick = cashIn;
 $('tray').onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); cashIn(); } };
 let resetArm = 0;
@@ -1974,7 +1992,7 @@ window.onBJRules = () => {
 load();
 freshShoe();
 render();
-if (S.fresh) askBuyin();
+if (S.fresh){ if (S.bank < 1) S.bank = 100; S.fresh = false; save(); render(); }   // 처음 여는 사람도 창 없이 $100
 })();
 </script>
 
