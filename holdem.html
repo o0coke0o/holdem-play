@@ -2134,7 +2134,7 @@ function eqTrack(){
   return parts.length ? `<span class="t trk">${parts.join('<em>›</em>')}</span>` : '';
 }
 // 스몰·빅 블라인드는 프리플롭에 이미 돈을 냈다 — 미리 폴드를 막는다(차례가 오면 체크로 공짜일 수도 있다 · 실수 방지)
-const blindLock = () => S.street === 'pre' && S.bbI === 0;   // 빅 블라인드만 — 스몰 블라인드는 미리 폴드 가능(2026-10-21 David)
+const blindLock = () => false;   // 2026-10-25 David «빅일때도 누를수 있게» — 빅 블라인드도 미리 폴드(공짜면 체크로 넘어간다)
 let eqWorker = null, eqPend = null, eqWait = [];
 try {
   // sc 는 화살표 함수라 String() 하면 이름이 빠진다 — const 로 붙여 보낸다 · holeScore 가 읽는 PRE_SC 표도 같이
@@ -2177,7 +2177,20 @@ async function myTurn(){
   S.myAdv = advise();
   if (S.myAdv && S.myAdv.to) S.size = S.myAdv.to;   // 추천 금액을 미리 맞춰 둔다
   if (S.opt.coach && S.myAdv) S.coach = {cls:'tip', text:`${S.myAdv.l1}\n${S.myAdv.why}`};
-  return await new Promise(res => { S.wait = res; if (S.preFold){ S.preFold = false; act({a:opts(0).toCall ? 'fold' : 'check'}); return; } render(); });
+  return await new Promise(res => { S.wait = res; if (S.preFold && runPre()) return; render(); });
+}
+// 미리 누르기(2026-10-25 David «미리폴드 뿐 아니라 체크 레이즈도 미리 · 빅일때도») — S.preFold = {a, cb:그때 건 금액, st:그때 거리}
+function runPre(){
+  const q = S.preFold, o = opts(0); S.preFold = false;
+  if (q.a === 'fold'){ act({a:o.toCall ? 'fold' : 'check'}); return true; }
+  if (q.a === 'all'){ act(o.canRaise ? {a:'raise', to:o.maxTo} : {a:'call'}); return true; }
+  if (S.curBet === q.cb && S.street === q.st){
+    if (q.a === 'call'){ act({a:o.toCall ? 'call' : 'check'}); return true; }
+    if (q.a === 'raise' && o.canRaise){ act({a:'raise', to:clampTo(S.size, o)}); return true; }
+  }
+  S.coach = {cls:'', text:`예약한 ${({call:'체크·콜', raise:'레이즈'})[q.a]}을 풀었습니다 — 그새 ${S.street !== q.st ? '다음 카드가 깔렸' : '앞에서 금액이 바뀌었'}습니다
+${(S.coach && S.coach.text) || ''}`};
+  return false;
 }
 // 내 자리: 버튼 · 컷오프 · 앞자리 · 스몰/빅 블라인드 — 자리마다 처음 레이즈해도 되는 손패 폭(상위 %)
 function myPos(){
@@ -2300,7 +2313,7 @@ function advise(){
       return R('bet', to, `베팅 ${$$(to)} 추천 (함정 풀기 · 팟의 40%)`, `${backed ? '상대가 앞 거리에 걸었다가 이번엔 체크로 물러섰습니다 — ' : '공짜 카드를 또 주면 따라잡힙니다 — '}이제 함정을 풀고 작게 걸어 약한 패의 콜을 받습니다 (지금 ${P(vr)})`); }
     return R('check', null, '체크 추천 (함정 유지)', `프리플롭에 콜만 해 함정을 팠습니다 — 플롭은 한 번 체크로 숨겨 상대가 먼저 걸게 둡니다 (지금 ${P(vr)})`);
   }
-  if (vr >= valueLine && st === 'river' && opp === 1 && vr >= 0.85 && (ct || ip)){   // 리버 넛급 1:1 — 팟보다 크게
+  if (vr >= valueLine && st === 'river' && opp === 1 && vr >= 0.85 && (ct || inPos())){   // 리버 넛급 1:1 — 팟보다 크게
     const to = Math.max(bb, Math.round(pot * 1.25));
     return R('bet', to, `베팅 ${$$(to)} 추천 (오버벳 · 팟의 1.25배)`, `${ctTxt}이길 확률 ${P(vr)} — 넛에 가까운 패입니다. 상위 프로는 리버에서 이런 패로 팟보다 크게 겁니다. 상대 체크는 센 패가 적다는 뜻이라 크게 걸어도 블러프처럼 보이고, 콜이 오면 한 번에 가장 많이 받습니다`);
   }
@@ -2392,13 +2405,12 @@ function act(d){
 $('bShuffle').onclick = e => { e.stopPropagation(); shuffleHand(); };
 $('bReplay').onclick = e => { e.stopPropagation(); replayHand(); };
 $('bRab').onclick = () => rabbitDeal();
-$('aFold').onclick = () => {
-  if (!S.wait){ const p = S.seats[0]; if (S.phase === 'play' && !VIEW && !p.folded && p.hole.length === 2 && !blindLock()){ S.preFold = !S.preFold; render(); } return; }
-  act({a:'fold'});
-};
-$('aCall').onclick = () => act({a:opts(0).toCall ? 'call' : 'check'});
-$('aRaise').onclick = () => { const o = opts(0); if (o.canRaise) act({a:'raise', to:clampTo(S.size, o)}); };
-$('aAll').onclick = () => { const o = opts(0), p = S.seats[0]; act(o.canRaise ? {a:'raise', to:o.maxTo} : {a:'call'}); };
+const canPre = a => { const p = S.seats[0]; return !S.wait && S.phase === 'play' && !VIEW && !p.folded && p.hole.length === 2 && (a === 'fold' || (!MP && p.stack > 0)); };
+const armPre = a => { if (!canPre(a)) return false; S.preFold = S.preFold && S.preFold.a === a ? false : {a, cb:S.curBet, st:S.street}; render(); return true; };
+$('aFold').onclick = () => { if (!S.wait){ armPre('fold'); return; } act({a:'fold'}); };
+$('aCall').onclick = () => { if (!S.wait){ armPre('call'); return; } act({a:opts(0).toCall ? 'call' : 'check'}); };
+$('aRaise').onclick = () => { if (!S.wait){ armPre('raise'); return; } const o = opts(0); if (o.canRaise) act({a:'raise', to:clampTo(S.size, o)}); };
+$('aAll').onclick = () => { if (!S.wait){ armPre('all'); return; } const o = opts(0), p = S.seats[0]; act(o.canRaise ? {a:'raise', to:o.maxTo} : {a:'call'}); };
 document.querySelectorAll('.sz').forEach(b => b.onclick = () => {
   if (!S.wait) return;
   const o = opts(0);
@@ -2946,23 +2958,12 @@ function layoutSeats(){
   };
   const toSeat = (sv, mx, my) => [mx - (sv.x - sv.w / 2), my - (sv.y - sv.pc)];
   const ROT = [0, 15, -15, 30, -30, 45, -45, 60, -60, 80, -80, 100, -100, 130, -130];
-  // 2026-10-25 David «자기 패를 기준으로 테이블 쪽에 걸도록» — 상대 칩은 카드 높이 그대로 테이블 안쪽 바로 옆(가로) · 막히면 위아래로 조금만 비킨다
+  // 2026-10-25 David «자기 패를 기준으로 테이블 쪽에 걸도록» → «자기 패 살짝 걸치게» — 칩은 늘 그 사람 카드 위에 반쯤 걸친다(비켜 찾지 않는다)
   // 카드 칸 폭은 재지 않고 카드 크기(--cw)로 센다 — 이 배치는 화면 크기가 바뀔 때만 돌아서 그때는 카드가 아직 없다(폭 0)
-  const side = (sv, k) => { const own = boxes[k], lf = sv.x < cx, top = sv.y - sv.pc, cw = parseFloat(getComputedStyle(sv.el).getPropertyValue('--cw')) || 36;
-    const hx = sv.x + (lf ? 1 : -1) * (cw * 0.8 + 2 + 23), hy = top + cw * 0.7;
-    for (loose of [false, true]) for (const dy of [0, -14, 14, -28, 28, -42, 42, -56, -70]) for (const dx of [0, 8, 16]){   // 맨 아래 자리는 내 카드 자리에 막혀 위로 올라가야 한다
-      const mx = hx + (lf ? dx : -dx), my = hy + dy, r = [mx - 20, my - 12, 40, 24];
-      boxes[k] = [0, 0, 0, 0]; const bad = hit(r); boxes[k] = own;   // 자기 자리 상자(카드·이름표 폭)는 비켜야 할 것이 아니다
-      if (!bad){ boxes.push(r); return [mx, my]; }
-    }
-    // 옆이 막히면(맨 아래 자리는 내 카드 자리와 맞닿는다) 그 사람 카드 바로 위 — 테이블 안쪽으로 조금 기울여
-    for (loose of [false, true]) for (const up of [16, 30, 44]) for (const dx of [14, 28, 0]){
-      const mx = sv.x + (lf ? dx : -dx), my = top - up, r = [mx - 20, my - 12, 40, 24];
-      boxes[k] = [0, 0, 0, 0]; const bad = hit(r); boxes[k] = own;
-      if (!bad){ boxes.push(r); return [mx, my]; }
-    }
-    return null; };
-  const mine = sv => { const cw = parseFloat(getComputedStyle(sv.el).getPropertyValue('--cw')) || 50; return [sv.x + cw * 0.95 + 4, sv.y - sv.pc - cw * 0.35]; };   // 내 카드 오른쪽 위 어깨 — 카드에 붙어 테이블 안쪽
+  const side = (sv) => { const lf = sv.x < cx, top = sv.y - sv.pc, cw = parseFloat(getComputedStyle(sv.el).getPropertyValue('--cw')) || 36;
+    // 2026-10-25 David «자기 앞도 헷갈린다 자기 패 살짝 걸치게» — 칩 가운데 = 테이블 쪽 카드 끝에서 6px 안쪽(칩 반쯤이 카드 위)
+    return [sv.x + (lf ? 1 : -1) * (cw * 0.8 - 6), top + cw * 0.62]; };
+  const mine = sv => { const cw = parseFloat(getComputedStyle(sv.el).getPropertyValue('--cw')) || 50; return [sv.x + cw * 0.95 - 6, sv.y - sv.pc - cw * 0.75]; };   // 내 오른쪽 카드 윗모서리에 걸친다   // 내 카드 오른쪽 위 어깨 — 카드에 붙어 테이블 안쪽
   seats.forEach((sv, k) => {
     const sp = sv.el.dataset.pos === '0' && HP ? mine(sv) : sv.el.dataset.pos !== '0' && sv.el.dataset.pos !== 't' && sv.el.dataset.pos !== 'b' ? side(sv, k) : null;
     const [bx, by] = toSeat(sv, ...(sp || place(sv, 46, 40, ROT)));
@@ -3098,13 +3099,19 @@ function renderActs(){
   const lockB = !my && S.phase === 'play' && !p.folded && p.hole.length === 2 && blindLock();
   const pre = !my && S.phase === 'play' && !p.folded && p.hole.length === 2 && !lockB;
   if (!pre) S.preFold = S.preFold && !p.folded && S.phase === 'play';
-  $('aFold').disabled = !my && !pre; $('aCall').disabled = !my;
-  $('aRaise').disabled = !my || !o.canRaise; $('aAll').disabled = !my || p.stack <= 0;
-  $('aFold').classList.toggle('armed', !!(pre && S.preFold)); $('aFold').classList.toggle('pre', pre && !S.preFold);
-  setHTML($('aCall'), my && o.toCall > 0 ? `${o.toCall >= p.stack ? '콜 올인' : '콜'}<kbd>${fmt(o.toCall)}</kbd>` : '체크<kbd>C</kbd>');
-  setHTML($('aRaise'), `${S.curBet > 0 && S.phase === 'play' ? '레이즈' : '베팅'}<kbd>${my && o.canRaise ? fmt(clampTo(S.size, o)) : 'R'}</kbd>`);
-  setHTML($('aAll'), `올인<kbd>${my ? fmt(p.stack + p.bet) : 'A'}</kbd>`);
-  setHTML($('aFold'), lockB ? `미리 폴드<kbd>빅 블라인드 · 안 됨</kbd>` : pre ? (S.preFold ? '폴드 예약 ✓<kbd>차례 오면 바로</kbd>' : '미리 폴드<kbd>F</kbd>') : '폴드<kbd>F</kbd>');
+  const pq = pre && S.preFold ? S.preFold.a : '', pk = a => pre && (a === 'fold' || canPre(a));
+  for (const [id, a] of [['aFold', 'fold'], ['aCall', 'call'], ['aRaise', 'raise'], ['aAll', 'all']]){
+    const b = $(id), ok = pk(a); b.classList.toggle('armed', ok && pq === a); b.classList.toggle('pre', ok && pq !== a);
+  }
+  $('aFold').disabled = !my && !pk('fold'); $('aCall').disabled = !my && !pk('call');
+  $('aRaise').disabled = my ? !o.canRaise : !pk('raise'); $('aAll').disabled = my ? p.stack <= 0 : !pk('all');
+  const owe = Math.max(0, S.curBet - p.bet), freeNow = owe === 0, ok2 = '<kbd>차례 오면 바로</kbd>';
+  setHTML($('aCall'), my ? (o.toCall > 0 ? `${o.toCall >= p.stack ? '콜 올인' : '콜'}<kbd>${fmt(o.toCall)}</kbd>` : '체크<kbd>C</kbd>')
+    : pk('call') ? (pq === 'call' ? `${freeNow ? '체크' : '콜'} 예약 ✓${ok2}` : `미리 ${freeNow ? '체크' : '콜'}<kbd>${freeNow ? 'C' : fmt(Math.min(owe, p.stack))}</kbd>`) : '체크<kbd>C</kbd>');
+  setHTML($('aRaise'), my ? `${S.curBet > 0 ? '레이즈' : '베팅'}<kbd>${o.canRaise ? fmt(clampTo(S.size, o)) : 'R'}</kbd>`
+    : pk('raise') ? (pq === 'raise' ? `${S.curBet > 0 ? '레이즈' : '베팅'} 예약 ✓<kbd>추천 금액으로</kbd>` : `미리 ${S.curBet > 0 ? '레이즈' : '베팅'}<kbd>R</kbd>`) : `${S.curBet > 0 && S.phase === 'play' ? '레이즈' : '베팅'}<kbd>R</kbd>`);
+  setHTML($('aAll'), my ? `올인<kbd>${fmt(p.stack + p.bet)}</kbd>` : pk('all') ? (pq === 'all' ? `올인 예약 ✓${ok2}` : '미리 올인<kbd>A</kbd>') : '올인<kbd>A</kbd>');
+  setHTML($('aFold'), pk('fold') ? (pq === 'fold' ? `${freeNow ? '체크/폴드' : '폴드'} 예약 ✓${ok2}` : '미리 폴드<kbd>F</kbd>') : '폴드<kbd>F</kbd>');
   const can = my && o.canRaise;
   document.querySelectorAll('.sz,.chip,#chipX,.szpm').forEach(b => b.disabled = !can);
   const r = $('sizeR'); r.disabled = !can;
@@ -3887,6 +3894,8 @@ document.addEventListener('keydown', e => {
   if (k === 'f' && S.phase === 'play'){ $('aFold').click(); return; }
   if (k === 's'){ shuffleHand(); return; }
   if (k === 'r'){ replayHand(); return; }
+  if (S.phase === 'play' && (k === 'c' || k === 'k')){ $('aCall').click(); return; }
+  if (S.phase === 'play' && k === 'a'){ $('aAll').click(); return; }
   if (!S.wait) return;
   else if (k === 'c' || k === 'k') $('aCall').click();
   else if (k === 'r' || k === 'b') $('aRaise').click();
@@ -4164,7 +4173,7 @@ function mpRender(){
   MP.seen0 = Object.assign(MP.seen0 || {}, here);
   if (nn.length) MP.note = {text:nn.join(' · '), until:Date.now() + 4000};
   const my = seated && T.phase === 'play' && T.toAct === m && MP.sent !== key;
-  if (my && S.preFold){ S.preFold = false; MP.sent = key; mpSend('act', {a:'fold'}); }   // 미리 폴드 예약
+  if (my && S.preFold){ const q = S.preFold; S.preFold = false; if (q.a === 'fold'){ MP.sent = key; mpSend('act', {a:'fold'}); } }   // 미리 폴드 예약(친구 대전은 폴드만)
   const my2 = my && MP.sent !== key;
   S.wait = my2 ? (d => { MP.sent = key; mpSend('act', {a:d.a, to:d.to}); render(); }) : null;
   if (my && MP.turn !== key){ MP.turn = key; MP.chipAdd = 0; S.size = opts(0).minTo; if (MP.lastTurnHand !== T.hand + ':' + T.street){ MP.lastTurnHand = T.hand + ':' + T.street; sfx('chip', .35); } }
