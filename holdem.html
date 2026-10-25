@@ -2463,7 +2463,7 @@ $('sizeR').oninput = e => {
    테이블 T개 × 자리 NS명. 테이블마다 정해진 인원(adv)이 남을 때까지 치고, 남은 사람은 칩을 그대로 들고 다음 라운드로.
    다음 라운드 테이블 수 = T ÷ 4(자리가 4의 배수이고 T도 4의 배수일 때) 또는 T ÷ 2 → adv = NS ÷ 그 수.
    8인 8테이블: 64명 → 각 2명 → 16명(2테이블) → 각 4명 → 8명 최종 테이블.
-   내 테이블만 실제로 치고, 다른 테이블은 결과(올라온 사람·칩)만 만든다. 블라인드는 1라운드 100BB · 다음 라운드부터 그때 평균 칩의 40BB(제일 적은 사람 20BB 이상)에서 시작해 10판마다 ×1.5. */
+   내 테이블만 실제로 치고, 다른 테이블은 결과(올라온 사람·칩)만 만든다. 블라인드는 1라운드 100BB · 다음 라운드부터 제일 적은 사람이 20BB인 블라인드에서 시작해 10판마다 ×1.5. */
 const TOUR_T = [4, 8, 16], TOUR_KEY = 'he-tour-v1';
 // 참가비: 4테이블 $200 · 8테이블 $1,000 · 16테이블 $10,000 — 지갑에서 낸다. 시작 칩도 같은 금액(빅 블라인드 100개). 상금 = 참가비 × 참가 인원을 상위 약 1/8 이 나눠 가진다(1위가 가장 크게)
 const TOUR_FEE = {4:200, 8:1000, 16:10000};   // 2026-10-25 David «2번째 500 → 1000 · 마지막은 10,000 스타트» — 시작 칩도 참가비와 같다(TOUR_START)
@@ -2498,15 +2498,15 @@ function simHand(tb, adv, bb){
 function simOthers(t, all){ const {adv} = tourStep(t.T), bb = bbAmt(); for (const tb of t.others || []){ let n = 0; do simHand(tb, adv, bb); while (all && tb.ps.filter(q => q.stack > 0).length > adv && ++n < 5000); } }
 const tourAllAlive = () => { const t = S.tour; if (!t) return []; return tourAlive().map(p => ({name:p.name, stack:p.stack, me:p.me})).concat((t.others || []).flatMap(tb => tb.ps.filter(q => q.stack > 0))); };
 const TOUR_LVL = 10;   // 라운드 안에서 10판마다 블라인드 ×1.5(안 오르면 한 라운드가 백 판 넘게 걸렸다)
-// 라운드 첫 블라인드: 1라운드 = 시작 칩 ÷ 100(100BB) · 2라운드부터 = 그때 남은 사람 평균 칩의 40BB(제일 적은 사람이 20BB 아래가 되지 않게)
+// 라운드 첫 블라인드: 1라운드 = 시작 칩 ÷ 100(100BB) · 2라운드부터 = 그때 남은 사람 중 제일 적은 사람이 20BB
 //   2026-10-25 David «두번째 판 칩이 이정도인데 블라인드가 적정한거야?» — 예전엔 라운드마다 처음 단계로 돌아가 $38/$76 → $2/$4(평균 200BB)로 내려갔다
-const niceK = x => { const p = 10 ** Math.floor(Math.log10(Math.max(1, x))); return [1, 2, 2.5, 5, 10].map(m => m * p).filter(v => v <= x).pop() || 1; };
+const niceK = x => { const p = 10 ** Math.floor(Math.log10(Math.max(1, x))); return [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].map(m => m * p).filter(v => v <= x).pop() || 1; };
 function tourK0(r){
   const t = S.tour, u = t && t.start ? Math.max(1, Math.round(t.start / 200)) : 1; if (!t || r <= 1) return u;
   if (t.k0 && t.k0r === r) return t.k0;
-  // 평균의 40BB · 단 제일 적은 사람도 20BB 는 되게(2026-10-25 David «제일 적은 사람 400 … 처음부터 너무 쎄면 불공평»)
-  const al = tourAllAlive().filter(q => q.stack > 0), av = al.reduce((a, q) => a + q.stack, 0) / Math.max(1, al.length), mn = Math.min(...al.map(q => q.stack));
-  const k = Math.max(u, Math.round(niceK(Math.min(av / 80, mn / 40))));
+  // 제일 적은 사람 = 20BB(2026-10-25 David «제일 적은 사람을 기준으로 · 평균을 기준으로 하지 말자»)
+  const al = tourAllAlive().filter(q => q.stack > 0), mn = Math.min(...al.map(q => q.stack));
+  const k = Math.max(u, Math.round(niceK(mn / 40)));
   if (r === t.round){ t.k0 = k; t.k0r = r; }   // 라운드가 시작되면 그 값으로 굳힌다(판마다 평균이 바뀌어도 흔들리지 않게)
   return k;
 }
@@ -3470,7 +3470,7 @@ function setBlinds(n){
 }
 $('blindPill').onclick = e => {
   e.stopPropagation();
-  if (S.tour){ S.coach = {cls:'', text:`토너먼트 블라인드는 10판마다 ×1.5 · 다음 라운드는 평균 칩의 40BB에서 시작 — 지금 ${fmt(sbAmt())}/${fmt(bbAmt())}, 다음 라운드 ${fmt(tourBlinds(S.tour.round + 1)[0])}/${fmt(tourBlinds(S.tour.round + 1)[1])}`}; render(); return; }
+  if (S.tour){ S.coach = {cls:'', text:`토너먼트 블라인드는 10판마다 ×1.5 · 다음 라운드는 제일 적은 사람 20BB에서 시작 — 지금 ${fmt(sbAmt())}/${fmt(bbAmt())}, 다음 라운드 ${fmt(tourBlinds(S.tour.round + 1)[0])}/${fmt(tourBlinds(S.tour.round + 1)[1])}`}; render(); return; }
   document.querySelectorAll('#blPop [data-bl]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.bl === S.bl));
   $('blPop').hidden = !$('blPop').hidden;
 };
