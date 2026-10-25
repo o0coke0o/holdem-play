@@ -118,6 +118,14 @@ button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 
 /* stats sheet */
 .sheet{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
+.pcdesc{margin:2px 0 12px;font-size:13.5px;line-height:1.5;color:var(--ivory)}
+.pcbar{display:grid;grid-template-columns:92px 1fr 38px;align-items:center;gap:8px;margin:7px 0;font-size:12.5px;font-weight:800;color:var(--muted)}
+.pcbar i{display:block;height:8px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+.pcbar i b{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#c9a24a,#f3d27a)}
+.pcbar em{font-style:normal;text-align:right;color:var(--ivory)}
+.pctip{margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(201,162,74,.12);border:1px solid var(--brass-soft);font-size:13px;line-height:1.5}
+.pctip b{color:var(--brass)}
+.pcseen{margin-top:8px;font-size:12px;color:var(--muted)}
 .panel{width:100%;max-width:600px;max-height:86%;overflow:auto;box-sizing:border-box;background:var(--panel);border:1px solid var(--brass-soft);border-bottom:none;border-radius:18px 18px 0 0;
   padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
 .panel h2{margin:0;font-family:var(--display);font-size:20px;font-weight:800}
@@ -422,6 +430,8 @@ body{margin:0}
 .card.down .flip{transform:rotateY(180deg)}
 .card.deal{animation:slidein var(--slide) cubic-bezier(.22,.68,.25,1) both;z-index:3}
 @keyframes slidein{from{transform:translate(var(--dx),var(--dy)) rotate(-14deg)}to{transform:none}}
+#board .card.deal{animation:none}
+.felt .board{width:calc(var(--cw) * 5 + 20px);margin-inline:auto;justify-content:flex-start}   /* 보드 카드는 깔린 자리 1번부터 — 가운데 정렬이면 플롭이 2~4번 자리에 섰다 */   /* 보드는 날아오지 않는다 — 깔린 뒷면 자리에서 뒤집힘만 */
 .card.turn .flip{animation:turnup var(--turn) ease-in-out both}
 @keyframes turnup{from{transform:rotateY(180deg)}to{transform:rotateY(0)}}
 .betline{display:flex;align-items:center;gap:10px}
@@ -599,6 +609,13 @@ body{margin:0}
 .sbet .amt .wonamt{color:#ffd96b;font-weight:900;font-size:12px;text-shadow:0 0 8px rgba(255,200,80,.6),0 1px 2px #000}
 @media (prefers-reduced-motion:reduce){.pc.drop{animation:none}}
 .felt.half .slots > *{border-color:rgba(200,255,245,.22)}
+/* 판이 시작되면 보드 다섯 자리에 뒷면 카드가 깔려 있고, 플롭·턴·리버 때 그 자리에서 한 장씩 뒤집힌다(2026-10-25 David «5장 다 깔아버려 · 뒤에 두 장은 뒤집어져서 · 한 장씩 뒤집어지는 이펙트») */
+.felt.live .slots > *{border:none;border-radius:calc(var(--cw)*.12);
+  background:repeating-linear-gradient(45deg,rgba(255,236,214,.22) 0 1px,rgba(0,0,0,0) 1px 6px),repeating-linear-gradient(-45deg,rgba(255,236,214,.22) 0 1px,rgba(0,0,0,0) 1px 6px),radial-gradient(ellipse at 50% 50%,#8e2234,#561120);
+  box-shadow:inset 0 0 0 calc(var(--cw)*.055) #fbf7ef,inset 0 0 0 calc(var(--cw)*.07) #8e2234,inset 0 0 0 calc(var(--cw)*.078) #fbf7ef,0 2px 6px rgba(0,0,0,.5);animation:slotin .32s ease-out both}
+.felt.live .slots > :nth-child(2){animation-delay:.06s} .felt.live .slots > :nth-child(3){animation-delay:.12s} .felt.live .slots > :nth-child(4){animation-delay:.18s} .felt.live .slots > :nth-child(5){animation-delay:.24s}
+@keyframes slotin{from{opacity:0;transform:translateY(-10px) scale(.94)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.felt.live .slots > *{animation:none}}
 .felt.half .card.w5 .front{box-shadow:0 0 0 3px #ffd75e,0 0 18px rgba(255,215,94,.95)}
 .felt.half .seat.win .plate{border-color:#f7c948;box-shadow:0 0 0 1px #f7c948,0 0 18px rgba(247,201,72,.6)}
 .felt.half .seat.win .plate::after{content:"WINNER";position:absolute;left:50%;top:-11px;translate:-50% 0;padding:1px 8px;border-radius:999px;background:linear-gradient(#ffe48a,#d79b1c);color:#2a1a02;font:900 9.5px/1.3 var(--ui);letter-spacing:.12em;box-shadow:0 1px 4px rgba(0,0,0,.6);z-index:2}
@@ -618,7 +635,7 @@ body{margin:0}
 .felt.ns8 .deck{left:calc(50% - 96px)}
 /* 2026-10-25 David «딜러와 딜러카드 헷갈리니까 치워버려» — 덱은 카드가 날아오는 출발점이라 남기고 안 보이게만 · 딜러 단추는 그리지 않는다 */
 .deck{visibility:hidden} .seat .dbtn{display:none !important}
-.felt.ns8 .board,.felt.ns8 .slots,.felt.ns8 .mid,.felt.ns8 .potwrap{--cw:clamp(34px,9.2vw,42px)}
+.felt.ns8 .board,.felt.ns8 .slots,.felt.ns8 .mid,.felt.ns8 .potwrap,.felt.half .board,.felt.half .slots,.felt.half .mid,.felt.half .potwrap{--cw:clamp(34px,9.2vw,42px)}
 .board{z-index:2;min-height:calc(var(--cw)*1.4)}
 .board .card+.card{margin-left:0}
 .slots i{width:var(--cw);height:calc(var(--cw)*1.4);border-radius:calc(var(--cw)*.12);border:1px dashed rgba(201,162,74,.22);box-sizing:border-box}
@@ -658,6 +675,7 @@ body{margin:0}
 .seat .hole{display:flex;min-height:calc(var(--cw)*1.4);transition:opacity .35s}
 .seat .hole .card+.card{margin-left:calc(var(--cw)*-.4)}
 .seat[data-pos="0"] .hole .card+.card{margin-left:calc(var(--cw)*-.22)}
+.seat:not([data-pos="0"]) .plate{cursor:pointer}
 .plate{display:flex;align-items:center;gap:6px;padding:3px 10px 3px 3px;border-radius:999px;background:linear-gradient(#22170f,#120c09);border:1px solid var(--brass-soft);
   box-shadow:0 4px 10px rgba(0,0,0,.5);max-width:100%;box-sizing:border-box;transition:box-shadow .2s,border-color .2s,opacity .3s}
 .plate .av{flex:none;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:12px;color:var(--ink);background:var(--ac)}
@@ -667,6 +685,7 @@ body{margin:0}
 .plate .stk{font-size:11px;font-weight:800;color:var(--brass);font-variant-numeric:tabular-nums}
 .plate.lp{padding:3px 8px;justify-content:center} .plate.lp .av{display:none} .plate.lp .pl{align-items:center;text-align:center}
 .plate.lp .nm{font-size:10.5px;overflow:visible;text-overflow:clip} .plate.lp .stk{font-size:10px;white-space:nowrap}
+#felt .seat .plate.rtop{border-color:#ffd75e;box-shadow:0 0 0 2px #ffd75e,0 0 14px rgba(255,215,94,.7)}
 #felt .seat .plate.lp.best{background:linear-gradient(#f7dc8c,#e9c262);border-color:#f3d27a;box-shadow:0 0 12px rgba(243,210,122,.5)}
 #felt .seat .plate.lp.best .nm,#felt .seat .plate.lp.best .stk{color:var(--ink)}
 .plate.lp.fold .nm,.plate.lp.fold .stk{color:var(--muted)}
@@ -970,6 +989,20 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
   .chiprow{padding:0}
   .sdp,.sdp.rb{max-width:calc(100% - 32px)}   /* 결과 줄(이름·카드·족보)이 좁아 글자가 카드 위로 올라가지 않게 */
 }
+/* 폰 아래쪽 칸 줄이기 — 2026-10-25 David «조언칸·버튼 과도하게 커 · 테이블을 위아래로 길게» */
+@media (max-width:520px){
+  #coach,#coach.next{height:60px}
+  #coach:not(.next){justify-content:safe center;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;line-height:1.28}   /* 세 줄까지는 칸 안 · 더 길면 칸 안에서 위아래로 밀어 본다 */   /* 긴 조언은 칸 안에서 스크롤 — 윗줄이 잘리지 않게 */
+  #betRail,#actRail{min-height:0}
+  .rail{padding:6px 8px;gap:5px}
+  .b{padding:5px 3px 4px;font-size:12px;border-radius:9px;gap:1px}
+  .b kbd{font-size:8.5px}
+  .szpm{width:28px;height:28px;font-size:17px}
+  .sz{padding:3px 8px;font-size:11px}
+  .bankline{padding-bottom:3px;margin-bottom:0;font-size:11px}
+  .bankline b{font-size:15px}
+  .coachwrap .rvarr{width:26px}
+}
 </style>
 </head>
 <body>
@@ -1113,6 +1146,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
   <div class="panel prof" role="dialog" aria-label="손님 정보">
     <div style="display:flex;justify-content:space-between;align-items:center"><h2 id="profName"></h2><button class="tool" id="profClose">닫기</button></div>
     <p id="profDesc"></p>
+    <div id="profCard"></div>
     <div class="grid" id="profGrid"></div>
     <div id="profRead"></div>
     <p class="empty">생각하는 시간·몸짓·베팅 크기에 사람마다 버릇이 있습니다. 어떤 버릇이 어떤 패를 뜻하는지는 직접 읽어 보세요.</p>
@@ -1422,6 +1456,7 @@ function aimDeals(){
   const felt = $('felt'), [sx, sy] = layoutPos($('deck'), felt);
   for (const c of felt.querySelectorAll('.card.deal')){
     if (!c._aim) continue; c._aim = false;
+    if (c.closest('#board')){ c.style.setProperty('--dx', '0px'); c.style.setProperty('--dy', '0px'); continue; }   // 보드 카드는 날아오지 않고 깔린 뒷면 자리에서 뒤집힌다
     const [cx, cy] = layoutPos(c, felt);
     c.style.setProperty('--dx', (sx - cx) + 'px'); c.style.setProperty('--dy', (sy - cy) + 'px');
   }
@@ -1954,6 +1989,10 @@ function botDecide(i){
     return raise(e >= 0.85 || commit > 0.45 ? o.maxTo : sz(rnd(...pf.raise)));
   }
   if (e >= need + margin) return go({a:'call'});
+  // 잘 안 접는 사람(성격 카드 「잘 안 접음」과 같은 값) — 필요 승률이 모자라도 그만큼 더 따라온다. 칩 절반 넘게 드는 콜만은 예외
+  // 2026-10-25 David «잘 접지 않음 성격을 갖고 있는 사람들이 실제로는 너무 잘 접어»
+  { const stick = Math.min(1, (y.sticky || 0) * 4 + Math.max(0, y.doubt || 0) * 2.5);
+    if (stick >= 0.3 && commit <= 0.5 && e >= need * (1 - 0.55 * stick) && r < 0.35 + 0.6 * stick) return go({a:'call'}); }
   if (o.canRaise && S.raises < 2 && opp === 1 && ratio < 0.6 && commit < 0.2 && r < y.bluff * 0.35) return raise(sz(0.9));   // 작은 베팅에 가끔 블러프 레이즈
   return go({a:'fold'});
 }
@@ -2014,6 +2053,25 @@ function outsInfo(){
 function mainOpp(){
   const ag = S.seats[S.lastAgg]; if (ag && !ag.me && !ag.folded) return ag;
   const o = S.seats.filter(q => !q.me && !q.folded && !q.empty); return o.length === 1 ? o[0] : null;
+}
+// 성격 카드 — 상대 이름표를 누르면 뜬다(2026-10-25 David «Mike 빼고는 솔직히 개성들을 모르겠어» → «성격카드 만들어»)
+const PC_TIP = {
+  Mike:'약한 패로도 자주 겁니다 — 중간 패로 끝까지 받아 주고, 센 패는 그가 대신 걸게 체크로 둡니다',
+  Lin:'들어오면 대개 센 패입니다 — 그의 레이즈는 존중해 접고, 그가 체크로 넘기면 작게 걸어 훔칩니다',
+  Sofia:'블러프는 안 통합니다(끝까지 따라옴) — 센 패일 때 크게 걸어 받아 내세요. 그녀가 먼저 크게 걸면 진짜입니다',
+  Kenji:'버릇이 거의 없어 시간·크기로는 못 읽습니다 — 승률과 팟 오즈대로만 칩니다',
+  Ava:'넓게 들어오고 금액이 애매합니다 — 센 패면 가치 베팅을 두껍게, 블러프는 줄입니다',
+  Diego:'칩을 만지작거리다 크게 걸면 센 패, 작고 빠르게 걸면 블러프인 경우가 많습니다',
+  Yuki:'좋은 패 위주로 작게 자주 겁니다 — 작은 베팅엔 넓게 받아 주고, 큰 베팅이 나오면 강하다고 봅니다',
+  Omar:'정석파 — 큰 결정 앞에서 오래 고민하면 애매한 패, 바로 큰 금액이면 센 패입니다'
+};
+function pcardHTML(q){
+  const k = sk(q), y = STY[k] || STY.Omar, pf = PROF[k] || PROF.Omar, tag = (POOL.find(b => b.name === k) || {}).tag || q.tag || '';
+  const bar = (nm, v, mx) => { const r = Math.max(0.04, Math.min(1, v / mx)); return `<div class="pcbar"><span>${nm}</span><i><b style="width:${Math.round(r * 100)}%"></b></i><em>${Math.round(r * 10)}/10</em></div>`; };
+  return (q.like && q.like !== q.name ? `<p class="pcseen">${esc(q.like)}형 · ${esc(tag)}</p>` : '')
+    + bar('들어오는 폭', y.open + y.limp, 0.4) + bar('공격성', y.aggr, 0.8) + bar('블러프', y.bluff, 0.13)
+    + bar('잘 안 접음', y.sticky * 4 + Math.max(0, y.doubt) * 2.5, 0.8) + bar('신중함', y.tight, 0.8)
+    + `<div class="pctip"><b>상대하는 요령</b> — ${esc(PC_TIP[k] || PC_TIP.Omar)}</div>`;
 }
 function oppNote(q){
   const y = q && STY[sk(q)]; if (!y) return '';
@@ -2121,12 +2179,12 @@ async function myTurn(){
 }
 // 내 자리: 버튼 · 컷오프 · 앞자리 · 스몰/빅 블라인드 — 자리마다 처음 레이즈해도 되는 손패 폭(상위 %)
 function myPos(){
-  if (S.btn === 0) return ['버튼', 0.43];
-  if (S.sbI === 0) return ['스몰 블라인드', 0.40];
+  if (S.btn === 0) return ['버튼', 0.50];   // 처음 올리는 폭 — 최상위 프로(솔버) 기준: 버튼 50 · 컷오프 30 · 하이잭 22 · 앞 12~17 · 스몰 45
+  if (S.sbI === 0) return ['스몰 블라인드', 0.45];
   if (S.bbI === 0) return ['빅 블라인드', 0.12];
   // 버튼까지 남은 자리 수: 1 = 컷오프 · 2 = 하이잭 · 그 앞 = 앞자리(6인 기준 손패 폭)
   let k = 0, j = 0; while (j !== S.btn && k < NS){ j = nextSeat(j); k++; }
-  return k === 1 ? ['컷오프', 0.27] : k === 2 ? ['하이잭', 0.19] : ['앞자리', k === 3 ? 0.15 : k === 4 ? 0.12 : 0.10];
+  return k === 1 ? ['컷오프', 0.30] : k === 2 ? ['하이잭', 0.22] : ['앞자리', k === 3 ? 0.17 : k === 4 ? 0.14 : 0.12];
 }
 const P = v => Math.round(v * 100) + '%';
 // 패 순위: 절반보다 좋으면 「상위 ○%」, 나쁘면 「하위 ○%」(「상위 79%」가 좋은 패처럼 읽혔다)
@@ -2138,6 +2196,12 @@ const ieot = w => { const c = String(w).charCodeAt(String(w).length - 1) - 0xAC0
 const JG = {fold:'폴드가', call:'콜이', check:'체크가', raise:'레이즈가', bet:'베팅이'};
 // 지금 무엇이 나은가 — {a, why}. 프리플롭은 자리별 손패 표, 플롭 이후는 상대 범위로 본 승률과 팟 오즈
 // 지금 무엇이 나은가 — {a: 행동, to: 추천 금액, l1: 첫 줄(행동·금액), why: 둘째 줄(쉬운 말 이유)}
+// 보드 결: 같은 무늬 둘 이상 또는 세 장이 5칸 안에 이어지면 「젖은」 보드 — 프로는 마른 보드엔 작게 자주, 젖은 보드엔 크게 가려서 건다
+function boardWet(){
+  const b = S.board.slice(0, 3); if (b.length < 3) return false;
+  const su = {}; b.forEach(c => su[c.s] = (su[c.s] || 0) + 1); const vs = b.map(c => c.v).sort((x, y) => x - y);
+  return Math.max(...Object.values(su)) >= 2 || vs[2] - vs[0] <= 4;
+}
 function advise(){
   const me = S.seats[0], o = opts(0), pot = potTotal(), bb = bbAmt();
   if (me.hole.length < 2) return null;
@@ -2159,7 +2223,7 @@ function advise(){
     if (S.raises === 0){
       // 크기는 패 세기와 상관없이 자리로 정한다(센 패만 크게 올리면 크기로 읽힌다) — 뒷자리 2.5BB · 앞자리·블라인드 3BB · 따라온 사람마다 +1BB
       //   토너먼트에서 칩이 25BB 이하면 2.2BB · 잘 따라오는 손님이 있으면 센 패(상위 8%)는 +1BB 더 받아 낸다
-      const bx = S.tour && sbb <= 25 ? 2.2 : late ? 2.5 : 3, ex = station && tp <= 0.08 ? 1 : 0;
+      const bx = S.tour && sbb <= 25 ? 2.2 : pos === '스몰 블라인드' ? 3 : 2.5, ex = station && tp <= 0.08 ? 1 : 0;
       const to = Math.round(bb * (bx + ex) + lim * bb), extra = `${lim ? ` + 따라온 ${lim}명 몫` : ''}${ex ? ' + 잘 따라오는 손님 몫' : ''}`;
       if (o.toCall === 0) return tp <= 0.1 ? R('raise', to, `레이즈 ${$$(to)} 추천 (${bx}BB${extra})`, `${nm}${eun(nm)} 시작 패 ${rk(tp)} — 좋은 패라 올려서 팟을 키웁니다`) : R('check', null, '체크 추천', `${nm}${eun(nm)} 시작 패 ${rk(tp)} — 돈 안 내고 플롭을 보면 됩니다`);
       if (tp <= open){ const ad = R('raise', to, `레이즈 ${$$(to)} 추천 (${bx}BB${extra})`, `${nm}${eun(nm)} 시작 패 ${rk(tp)} — ${pos}에서 올려도 되는 패(상위 ${P(open)} 안). 올리면 다들 폴드해 팟을 바로 가져갈 수도 있습니다`); return tp > open - 0.04 ? C(ad, 'fold', `기준(상위 ${P(open)})의 끝자락이라 접어도 됩니다`) : ad; }
@@ -2171,11 +2235,12 @@ function advise(){
     const size = S.curBet / bb, adj = Math.max(0.6, Math.min(1.1, 3 / size));
     if (S.raises === 1){
       const ipx = inPos() ? 3 : 4;   // 리레이즈 크기: 내가 나중에 행동하면 3배, 먼저 행동하면(블라인드 등) 4배
-      if (tp <= 0.05){ const to = S.curBet * ipx; return R('raise', to, `리레이즈 ${$$(to)} 추천 (상대 금액의 ${ipx}배)`, `${nm}${eun(nm)} 시작 패 ${rk(tp)} — 아주 좋은 패라 한 번 더 올려 팟을 키웁니다`); }
       // 빅 블라인드는 이미 1BB를 냈고 맨 마지막이라 싸게 받는다 — 올린 사람이 뒷자리일수록 그 사람 패가 넓으니 더 넓게 지킨다
       const rp = S.pfrIdx === S.btn ? '버튼' : S.pfrIdx === S.sbI ? '스몰 블라인드' : nextSeat(S.pfrIdx) === S.btn ? '컷오프' : '앞자리';
-      const bbDef = rp === '버튼' || rp === '스몰 블라인드' ? 0.42 : rp === '컷오프' ? 0.32 : 0.22;
-      const cr = (pos === '빅 블라인드' ? bbDef : pos === '버튼' ? 0.16 : 0.12) * adj;
+      const v3 = rp === '앞자리' ? 0.04 : rp === '하이잭' ? 0.06 : 0.08;   // 가치 3벳 — 넓게 여는 뒷자리 상대로는 더 넓게
+      if (tp <= v3){ const to = S.curBet * ipx; return R('raise', to, `리레이즈 ${$$(to)} 추천 (상대 금액의 ${ipx}배)`, `${nm}${eun(nm)} 시작 패 ${rk(tp)} — ${rp}의 레이즈 상대로 상위 프로는 상위 ${P(v3)}까지 다시 올려 가치를 받습니다`); }
+      const bbDef = rp === '버튼' || rp === '스몰 블라인드' ? 0.55 : rp === '컷오프' ? 0.42 : 0.30;   // 빅 블라인드는 1BB를 이미 냈고 팟 오즈가 좋아 프로는 훨씬 넓게 지킨다
+      const cr = (pos === '빅 블라인드' ? bbDef : pos === '버튼' ? 0.15 : 0.07) * adj;   // 버튼·빅 말고는 「3벳 아니면 폴드」 — 콜로 받으면 뒤 블라인드에게 끼이고 범위가 읽힌다
       // 블러프 리레이즈: 뒷자리 레이즈를 상대로 A5s~A2s·수딧 커넥터를 가끔 — 에이스를 쥐고 있어 상대가 AA·AK 일 확률이 줄고, 콜 받아도 스트레이트·플러시로 이길 길이 있다
       const h0 = me.hole[0].v >= me.hole[1].v ? me.hole : [me.hole[1], me.hole[0]], suited = h0[0].s === h0[1].s;
       const b3 = suited && ((h0[0].v === 14 && h0[1].v <= 5) || (h0[0].v - h0[1].v === 1 && h0[0].v >= 6 && h0[0].v <= 10));
@@ -2188,8 +2253,9 @@ function advise(){
       { const ad = R('fold', null, '폴드 추천', `${nm}${eun(nm)} 시작 패 ${rk(tp)} — ${who}는 상위 ${P(cr)} 안의 패로만 받아 줍니다`); return tp <= cr + 0.08 && o.toCall <= me.stack * 0.15 ? C(ad, 'call', `기준(상위 ${P(cr)})에 가까운 ${rk(tp)}에 콜 금액도 칩의 ${P(o.toCall / Math.max(1, me.stack))}뿐이라 따라가 볼 만도 합니다`) : ad; }
     }
     if (tp <= 0.02){ const to = S.curBet * 2.4 > o.maxTo * 0.45 ? o.maxTo : S.curBet * 2.4; return R('raise', to, `${to >= o.maxTo ? '올인' : '레이즈'} ${$$(to)} 추천`, `${nm}${eun(nm)} 시작 패 ${rk(tp)} — 리레이즈를 받아도 다시 올릴 최상위 패입니다`); }
-    if (tp <= 0.05 && o.toCall <= me.stack * 0.4) return R('call', null, `콜 ${fmt(o.toCall)} 추천`, `${nm}${eun(nm)} 시작 패 ${rk(tp)} — 리레이즈에도 따라갈 만한 패입니다`);
-    { const ad = R('fold', null, '폴드 추천', `${nm}${eun(nm)} 시작 패 ${rk(tp)} — 리레이즈까지 받으면 상위 5% 안의 패로만 따라갑니다`); return tp <= 0.09 && o.toCall <= me.stack * 0.2 ? C(ad, 'call', `상위 5% 바로 밖의 ${rk(tp)}라 따라가 볼 만도 합니다`) : ad; }
+    const c3 = inPos() ? 0.10 : 0.07;   // 3벳을 받고 따라가는 폭 — 자리가 좋으면 더 넓게
+    if (tp <= c3 && o.toCall <= me.stack * 0.4) return R('call', null, `콜 ${fmt(o.toCall)} 추천`, `${nm}${eun(nm)} 시작 패 ${rk(tp)} — 상위 프로는 리레이즈를 받으면 ${inPos() ? '자리가 좋아 ' : ''}상위 ${P(c3)}까지 따라갑니다`);
+    { const ad = R('fold', null, '폴드 추천', `${nm}${eun(nm)} 시작 패 ${rk(tp)} — 리레이즈까지 받으면 상위 프로도 상위 ${P(c3)} 안의 패로만 따라갑니다`); return tp <= c3 + 0.04 && o.toCall <= me.stack * 0.2 ? C(ad, 'call', `상위 5% 바로 밖의 ${rk(tp)}라 따라가 볼 만도 합니다`) : ad; }
   }
   // 상대 패를 좁힐 근거가 없으면(X ≥ 1) 범위 승률 = 그냥 승률 — 비워 두면 레이즈 없는 판의 플롭 뒤 추천이 통째로 안 나왔다
   const vr = S.eq && S.eq.key === eqKey() ? (S.eq.vr != null ? S.eq.vr : S.eq.v) : null;
@@ -2231,8 +2297,16 @@ function advise(){
       return R('bet', to, `베팅 ${$$(to)} 추천 (함정 풀기 · 팟의 40%)`, `${backed ? '상대가 앞 거리에 걸었다가 이번엔 체크로 물러섰습니다 — ' : '공짜 카드를 또 주면 따라잡힙니다 — '}이제 함정을 풀고 작게 걸어 약한 패의 콜을 받습니다 (지금 ${P(vr)})`); }
     return R('check', null, '체크 추천 (함정 유지)', `프리플롭에 콜만 해 함정을 팠습니다 — 플롭은 한 번 체크로 숨겨 상대가 먼저 걸게 둡니다 (지금 ${P(vr)})`);
   }
+  if (vr >= valueLine && st === 'river' && opp === 1 && vr >= 0.85 && (ct || ip)){   // 리버 넛급 1:1 — 팟보다 크게
+    const to = Math.max(bb, Math.round(pot * 1.25));
+    return R('bet', to, `베팅 ${$$(to)} 추천 (오버벳 · 팟의 1.25배)`, `${ctTxt}이길 확률 ${P(vr)} — 넛에 가까운 패입니다. 상위 프로는 리버에서 이런 패로 팟보다 크게 겁니다. 상대 체크는 센 패가 적다는 뜻이라 크게 걸어도 블러프처럼 보이고, 콜이 오면 한 번에 가장 많이 받습니다`);
+  }
+  if (vr >= valueLine && st === 'river' && vr < 0.72){   // 얇은 가치 — 약한 패만 콜하도록 작게
+    const to = Math.max(bb, Math.round(pot * 0.33));
+    return R('bet', to, `베팅 ${$$(to)} 추천 (얇은 가치 · 팟의 ⅓)`, `${ctTxt}이길 확률 ${P(vr)} — 이기긴 하지만 크게 걸면 나보다 센 패만 따라옵니다. 프로는 이럴 때 팟의 ⅓로 약한 패의 콜만 받아 냅니다`);
+  }
   if (vr >= valueLine){
-    const f = vr >= 0.8 ? 0.75 : st === 'flop' ? 0.5 : 0.66, fr = f === 0.5 ? '½' : f === 0.75 ? '¾' : '⅔';
+    const f = vr >= 0.8 ? 0.75 : st === 'flop' ? (boardWet() ? 0.66 : 0.33) : 0.66, fr = f === 0.33 ? '⅓' : f === 0.5 ? '½' : f === 0.75 ? '¾' : '⅔';
     const to = Math.max(bb, Math.round(pot * f));
     const tail = vr >= 0.8 ? '아주 강하니 크게 받아 냅니다' : st === 'river' ? '나보다 약한 패가 콜해 주길 바라는 가치 베팅(리버는 더 나올 카드가 없어 상대를 접게 하려는 게 아닙니다)' : '약한 패도 따라오게 너무 크지 않게';
     return R('bet', to, `베팅 ${$$(to)} 추천 (팟의 ${fr})`, `${station ? on + '라 약한 패로도 따라옵니다 — ' : ''}${ctTxt}내가 이길 확률 ${P(vr)} — ${tail}`);
@@ -2243,9 +2317,17 @@ function advise(){
   }
   const ip = inPos(), mv = mixVal(), first = !S.seats.some(q => !q.me && !q.folded && q.acted);
   // 프리플롭에 내가 올렸으면 플롭에서 작게 한 번 더(상대는 내가 센 패라고 본다) — 약한 패는 섞어서
-  if (st === 'flop' && S.pfrIdx === 0 && opp <= 2 && !station && (ct || first) && (vr >= 0.35 || mv < (opp === 1 ? (ip ? 0.65 : 0.5) : 0.3))){
-    const to = Math.max(bb, Math.round(pot * 0.33)), bl = vr < 0.35;
-    return Object.assign(R('bet', to, `베팅 ${$$(to)} 추천 (${bl ? '블러프 · ' : ''}팟의 ⅓)`, `프리플롭에 내가 올렸으니 상대는 내가 센 패라고 봅니다 — 작게 걸면 자주 접고, 따라와도 손해가 작습니다 (지금 ${P(vr)})`), bl ? {alt:'check'} : {});
+  if (st === 'flop' && S.pfrIdx === 0 && opp <= 2 && !station && (ct || first)){
+    const wet = boardWet(), dr1 = myDraws();
+    if (!wet && (vr >= 0.3 || mv < (opp === 1 ? (ip ? 0.8 : 0.6) : 0.35))){   // 마른 보드: 거의 범위 전체로 작게
+      const to = Math.max(bb, Math.round(pot * 0.3)), bl = vr < 0.35;
+      return Object.assign(R('bet', to, `베팅 ${$$(to)} 추천 (${bl ? '블러프 · ' : ''}팟의 ¼~⅓)`, `마른 보드라 프리플롭에 올린 내 쪽이 센 패가 훨씬 많습니다 — 상위 프로는 이런 보드에 거의 모든 패로 작게 겁니다. 작게 걸어도 상대 약한 패는 대부분 접습니다 (지금 ${P(vr)})`), bl ? {alt:'check'} : {});
+    }
+    if (wet && (vr >= 0.5 || (dr1 && vr >= 0.3))){   // 젖은 보드: 센 패·드로우만 크게, 나머지는 체크
+      const to = Math.max(bb, Math.round(pot * 0.66));
+      return R('bet', to, `베팅 ${$$(to)} 추천 (팟의 ⅔)`, `무늬·연결이 있는 젖은 보드는 상대 콜 범위에 드로우가 많습니다 — 프로는 여기서 센 패와 드로우로만 크게 걸어 드로우에 값을 물립니다 (지금 ${P(vr)})`);
+    }
+    if (wet) return R('check', null, '체크 추천', `젖은 보드에서 애매한 패로 작게 걸면 드로우에 싸게 다음 카드를 줍니다 — 상위 프로는 이런 패는 체크로 넘깁니다 (지금 ${P(vr)})`);
   }
   // 두 번 연속 체크로 넘겼으면 상대 패는 약하다 — 자리가 좋을 때 가끔 찌른다
   if (st === 'turn' && ct && ip && opp === 1 && !station && vr < 0.4 && mv < 0.35){
@@ -2454,8 +2536,8 @@ function tourAdvance(){
 // 내 약점 통계 — 판마다 한 줄(자리 · 참여 · 레이즈 · 리레이즈 기회 · C벳 · 쇼다운 · 손익 BB · 거리별 틀림)을 쌓아 기준과 견준다
 //   기준은 6인 노리밋 정석의 대략값 — 순위표 눈금(앞자리 15% · 하이잭 19% · 컷오프 27% · 버튼 43% · 스몰 40%)과 같은 줄기
 const LK_KEY = 'holdem-leak-v1', LK_POS = ['앞자리', '하이잭', '컷오프', '버튼', '스몰 블라인드', '빅 블라인드'];
-const LK_VT = {'앞자리':[10, 18], '하이잭':[14, 23], '컷오프':[20, 32], '버튼':[30, 48], '스몰 블라인드':[24, 42], '빅 블라인드':[22, 45]};
-const LK_OPEN = {'앞자리':15, '하이잭':19, '컷오프':27, '버튼':43, '스몰 블라인드':40};
+const LK_VT = {'앞자리':[12, 20], '하이잭':[18, 26], '컷오프':[25, 35], '버튼':[40, 58], '스몰 블라인드':[30, 48], '빅 블라인드':[35, 60]};   // 상위 프로 기준(2026-10-25) — 추천(myPos·bbDef)과 같은 폭
+const LK_OPEN = {'앞자리':14, '하이잭':22, '컷오프':30, '버튼':50, '스몰 블라인드':45};
 const LK_ST = {pre:'프리플롭', flop:'플롭', turn:'턴', river:'리버'};
 function lkGet(){ try { const a = JSON.parse(localStorage.getItem(LK_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
 function lkSeq(p, d, o, pre0){
@@ -2799,7 +2881,7 @@ function layoutSeats(){
       <path d="${d}" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="1.2" transform="translate(${W / 2} ${(y0 + y1) / 2}) scale(.93) translate(${-W / 2} ${-(y0 + y1) / 2})"/>
       <path d="${d}" fill="none" stroke="#000" stroke-width="1"/></svg>`;
   } else { const ov = f.querySelector('.oval'); if (ov.firstChild) ov.innerHTML = ''; }   // 윗변 = 판 맨 위(흐려지는 쪽) · 아랫변 = 내 이름표 위
-  if (HP){ oh = HP.hh; ot = HP.top; cy = Math.round(HP.top + HP.hh * 0.63); }   // 보드 = 가운데 줄과 아래 줄 사이   // 맨 위 자리 카드(64)가 판 안에 들게 내리되 맨 아래 내 자리가 넘치지 않는 데까지   // 맨 위 자리는 이름표 위로 카드가 서니(약 64px) 그만큼 판을 내린다 — 맨 아래 내 자리가 넘치지 않는 데까지
+  if (HP){ oh = HP.hh; ot = HP.top; cy = Math.round(HP.top + HP.hh * 0.69); }   // 보드 = 가운데 줄과 아래 줄 사이   // 맨 위 자리 카드(64)가 판 안에 들게 내리되 맨 아래 내 자리가 넘치지 않는 데까지   // 맨 위 자리는 이름표 위로 카드가 서니(약 64px) 그만큼 판을 내린다 — 맨 아래 내 자리가 넘치지 않는 데까지
   f.style.setProperty('--cy', cy + 'px'); f.style.setProperty('--ot', ot + 'px'); f.style.setProperty('--oh', oh + 'px');
   // 자리를 잇는 길 = 타원보다 조금 큰 타원(옆은 난간 위, 위·아래는 난간 바깥)
   const cx = W / 2, A = (cx - 42) / (NS === 8 ? Math.cos(Math.PI / 8) : NS === 6 ? Math.sin(Math.PI / 3) : 1), B = oh / 2 + 32;   // 양옆 손님 이름표 가운데가 화면 끝에서 42px
@@ -2809,7 +2891,7 @@ function layoutSeats(){
   const L = acc[acc.length - 1], step = L / NS, off = NS === 8 ? -step / 2 : 0;
   // 절반 테이블: 나는 아래 가운데, 손님은 왼쪽 줄(아래→위) · 오른쪽 줄(위→아래) — 시계 방향 순서는 그대로
   const nl = Math.ceil((NS - 1) / 2), nr = NS - 1 - nl, HA = cx - 40, HB = HP ? HP.hh + 32 : 0;
-  const hpAt = i => { if (!i) return [cx, HP.top + HB]; const lf = i <= nl, k = lf ? i - 1 : i - 1 - nl, n = lf ? nl : nr, q = n > 1 ? k / (n - 1) : .5, th = ((lf ? 40 + 42 * q : 82 - 42 * q) + (lf ? (q < .5 ? 10 : 6) : 5) * Math.sin(Math.PI * q)) * Math.PI / 180;   // 가운데 줄은 조금 위로 — 보드와 안 겹치게   // 양옆 줄은 가장자리에 붙여 보드 다섯 장 자리를 비운다
+  const hpAt = i => { if (!i) return [cx, HP.top + HB - 14]; /* 내 자리는 조금 올려 아래 꼬리표가 조언 칸에 안 걸치게 */ const lf = i <= nl, k = lf ? i - 1 : i - 1 - nl, n = lf ? nl : nr, q = n > 1 ? k / (n - 1) : .5, th = (lf ? 33 + 49 * q : 82 - 49 * q) * Math.PI / 180;   // 2026-10-25 David «왼쪽 3명 너무 붙어 · Mike·Yuki 좀 아래로» — 맨 아래 자리 40° → 33°, 고르게   // 가운데 줄은 조금 위로 — 보드와 안 겹치게   // 양옆 줄은 가장자리에 붙여 보드 다섯 장 자리를 비운다
     const y = HP.top + HB * Math.cos(th), yc = HP.top + HP.hh * 0.6, u = Math.max(0, (y - yc) / (HP.hh * 0.4)), w = (W / 2) * Math.sqrt(Math.max(0, 1 - u * u));   // 그 높이의 테두리 폭(위 60%는 곧고 아래만 둥글다)
     return [cx + (lf ? -1 : 1) * (TB ? Math.min(W / 2 - 40, TB.hw(y) + 6) : Math.max(0, w - 38)), y]; };   // 이름표 가운데가 테두리에서 38px 안쪽
   const at = sv => { sv = ((sv % L) + L) % L; let k = 1; while (k < acc.length - 1 && acc[k] < sv) k++; const r = (sv - acc[k - 1]) / Math.max(1e-6, acc[k] - acc[k - 1]); return [pts[k - 1][0] + (pts[k][0] - pts[k - 1][0]) * r, pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * r]; };
@@ -2828,7 +2910,7 @@ function layoutSeats(){
   const sl = f.querySelector('.slots').children, s0 = sl[0], s4 = sl[sl.length - 1], so = f.querySelector('.slots');
   boxes.push([s0.offsetLeft - 2, so.offsetTop - 2, s4.offsetLeft + s4.offsetWidth - s0.offsetLeft + 4, s0.offsetHeight + 4]);
   const pw = f.querySelector('.potwrap'); boxes.push([cx - 92, pw.offsetTop + pw.offsetHeight - 50, 184, 54]);   // 팟은 아래(보드 위)에 붙어 위로 자란다 — 알약 높이까지 비운다   // 팟 칩 기둥 + 「팟 $00」 글씨가 다 서는 폭
-  const dk = $('deck'); boxes.push([dk.offsetLeft, dk.offsetTop, dk.offsetWidth + 3, dk.offsetHeight + 3]);
+  // 덱은 숨겼다(2026-10-25) — 비킬 자리에서 뺀다
   boxes.push([8, H - 48, 112, 42]);   // 왼쪽 아래 [셔플] 단추 자리(판 중에만 보이지만 늘 비워 둔다)
   const inOval = TB ? (mx, my) => my >= TB.y0 + 8 && my <= TB.y1 - 8 && Math.abs(mx - cx) <= TB.hw(my) - 10
     : HP ? (mx, my) => { const yc = HP.top + HP.hh * 0.6; return my >= HP.top + 4 && (my <= yc ? Math.abs(mx - cx) <= W / 2 - 6 : ((mx - cx) / (W / 2 - 6)) ** 2 + ((my - yc) / (HP.hh * 0.4 - 4)) ** 2 <= 1); }   // 위 60%는 곧은 옆면 · 아래 40%만 둥글다
@@ -2854,14 +2936,21 @@ function layoutSeats(){
   // 카드 칸 폭은 재지 않고 카드 크기(--cw)로 센다 — 이 배치는 화면 크기가 바뀔 때만 돌아서 그때는 카드가 아직 없다(폭 0)
   const side = (sv, k) => { const own = boxes[k], lf = sv.x < cx, top = sv.y - sv.pc, cw = parseFloat(getComputedStyle(sv.el).getPropertyValue('--cw')) || 36;
     const hx = sv.x + (lf ? 1 : -1) * (cw * 0.8 + 2 + 23), hy = top + cw * 0.7;
-    for (loose of [false, true]) for (const dy of [0, -14, 14, -28, 28]) for (const dx of [0, 10, 20]){
-      const mx = hx + (lf ? dx : -dx), my = hy + dy, r = [mx - 23, my - 14, 46, 28];
+    for (loose of [false, true]) for (const dy of [0, -14, 14, -28, 28, -42, 42, -56, -70]) for (const dx of [0, 8, 16]){   // 맨 아래 자리는 내 카드 자리에 막혀 위로 올라가야 한다
+      const mx = hx + (lf ? dx : -dx), my = hy + dy, r = [mx - 20, my - 12, 40, 24];
       boxes[k] = [0, 0, 0, 0]; const bad = hit(r); boxes[k] = own;   // 자기 자리 상자(카드·이름표 폭)는 비켜야 할 것이 아니다
       if (!bad){ boxes.push(r); return [mx, my]; }
     }
+    // 옆이 막히면(맨 아래 자리는 내 카드 자리와 맞닿는다) 그 사람 카드 바로 위 — 테이블 안쪽으로 조금 기울여
+    for (loose of [false, true]) for (const up of [16, 30, 44]) for (const dx of [14, 28, 0]){
+      const mx = sv.x + (lf ? dx : -dx), my = top - up, r = [mx - 20, my - 12, 40, 24];
+      boxes[k] = [0, 0, 0, 0]; const bad = hit(r); boxes[k] = own;
+      if (!bad){ boxes.push(r); return [mx, my]; }
+    }
     return null; };
+  const mine = sv => { const cw = parseFloat(getComputedStyle(sv.el).getPropertyValue('--cw')) || 50; return [sv.x + cw * 0.95 + 4, sv.y - sv.pc - cw * 0.35]; };   // 내 카드 오른쪽 위 어깨 — 카드에 붙어 테이블 안쪽
   seats.forEach((sv, k) => {
-    const sp = sv.el.dataset.pos !== '0' && sv.el.dataset.pos !== 't' && sv.el.dataset.pos !== 'b' ? side(sv, k) : null;
+    const sp = sv.el.dataset.pos === '0' && HP ? mine(sv) : sv.el.dataset.pos !== '0' && sv.el.dataset.pos !== 't' && sv.el.dataset.pos !== 'b' ? side(sv, k) : null;
     const [bx, by] = toSeat(sv, ...(sp || place(sv, 46, 40, ROT)));
     Object.assign(sv.el._bstack.parentNode.style, {left:(bx - 23) + 'px', top:(by - 20) + 'px', right:'auto', bottom:'auto', width:'46px', margin:'0'});
   });
@@ -2921,7 +3010,7 @@ function renderSeat(p, i){
   // 판 끝 족보 꼬리표(「원페어 7 / 상위 43%」)는 상대 자리 이름·금액 칸 안에 바꿔 띄운다 — 밑에 붙이면 옆 자리 패를 가렸다(2026-10-25 David)
   const lp = S.phase === 'done' && p.label && (['hand', 'best', 'win'].includes(p.label.c) || p.label.t.includes('\n'));
   const ll = lp ? (p.label.t.includes('\n') ? p.label.t.split('\n') : p.label.t.split(' · ')) : null;
-  el._plate.className = lp ? 'plate lp ' + p.label.c : 'plate';
+  el._plate.className = (lp ? 'plate lp ' + p.label.c : 'plate') + (S.rab && p.rabTop ? ' rtop' : '');
   setHTML(el._nm, lp ? esc(ll[0]) : p.me ? '나' : `${p.name}<small>${p.tag}</small>`);
   setHTML(el._stk, lp ? esc(ll.slice(1).join(' · ')) : fmt(p.stack));
   // 딜러 · 스몰 · 빅 — 둘만 남으면 딜러가 스몰을 낸다
@@ -3053,7 +3142,8 @@ function renderBanner(){
   const b = S.banner, sd = S.sd, rv = S.review;
   // ✕ 로 닫은 복기·쇼다운 상자 — 테이블을 누르면 다시 연다
   if (S.rvHide && S.phase === 'done' && (rv || sd || S.rab)){ $('felt').classList.toggle('sd', false); $('felt').classList.toggle('done', true); $('felt').classList.toggle('peek', !!S.peek); setHTML($('banner'), ''); return; }
-  if (S.rab && S.phase === 'done'){ $('felt').classList.toggle('sd', true); $('felt').classList.toggle('done', true); $('felt').classList.toggle('peek', !!S.peek); setHTML($('banner'), rabbitHTML()); return; }
+  // 받아보기는 창을 띄우지 않는다 — 자리마다 족보, 이기고 있는 사람만 금테(2026-10-25 David «받아보기도 별도 팝업 띄우지 마»)
+  if (S.rab && S.phase === 'done'){ $('felt').classList.toggle('sd', false); $('felt').classList.toggle('done', true); $('felt').classList.toggle('peek', !!S.peek); setHTML($('banner'), ''); return; }
   // 복기 상자는 그리지 않는다 — 글은 조언 칸과 같고 패는 자리마다 펼쳐진다 · 해설은 조언 칸을 누르면 열린다
   if (false && rv && !sd){
     $('felt').classList.toggle('sd', true); $('felt').classList.toggle('done', S.phase === 'done'); $('felt').classList.toggle('peek', !!S.peek);
@@ -3263,6 +3353,7 @@ function openTourGate(){
   $('tourGate').hidden = false;
 }
 $('exClose').onclick = () => { $('exSheet').hidden = true; };
+
 $('coach').addEventListener('click', e => {
   const b = e.target.closest('[data-cint]'); if (!b || !S.intent || !S.post) return;
   e.stopPropagation();
@@ -3383,6 +3474,17 @@ function abandonHand(){
   Object.assign(S, {phase:'idle', wait:null, preFold:false, board:[], pot:0, potVis:0, curBet:0, toAct:-1, banner:null, sd:null, review:null, post:null});
   S.coach = {cls:'', text:'지난번 판은 블랙잭으로 옮기며 없던 판으로 했습니다 — 건 칩은 돌려받았고, 같은 순서로 새로 나눕니다'};
 }
+// 받아본 보드로 자리마다 꼬리표를 다시 — 윗줄 든 패 순위 · 아랫줄 그 보드의 족보 · 1등은 rabTop
+function rabbitLabels(){
+  const hs = S.seats.filter(q => !q.empty && q.hole.length === 2); if (!hs.length) return;
+  const sc = hs.map(q => S.board.length >= 3 ? best5(q.hole.concat(S.board)).score : -1), top = Math.max(...sc);
+  hs.forEach((q, n) => {
+    const l1 = S.board.length >= 3 ? handName(sc[n], q.hole) : preName(q.hole);
+    q.label = {t:`${rk(topPct(q.hole[0], q.hole[1]))}
+${l1}`, c:q.folded ? 'fold' : 'hand'};
+    q.rabTop = !!S.rab && sc[n] === top;
+  });
+}
 function rabbitDeal(){
   if (S.phase !== 'done' || VIEW || MP || S.board.length >= 5) return;
   if (!S.seats.some(q => !q.empty && q.hole.length === 2)) return;
@@ -3392,7 +3494,7 @@ function rabbitDeal(){
   const burn = S.deck.pop(), got = [];   // 실제 판처럼 버닝 한 장
   for (let k = 0; k < n; k++){ const c = S.deck.pop(); c.rab = n === 3 ? 'f' + k : 't'; c.revealT = now + k * 120; S.board.push(c); got.push(c); }
   S.rab.steps.push({burn, got});
-  S.hl = null; S.rvHide = false; sfx('deal', .5);
+  S.hl = null; S.rvHide = false; sfx('deal', .5); rabbitLabels();
   render(); setTimeout(render, n * 120 + TURN);
 }
 // 마지막으로 받은 묶음을 덱으로 되돌린다 — 다시 [받아보기]를 누르면 같은 카드가 같은 순서로 나온다
@@ -3403,7 +3505,7 @@ function rabbitUndo(){
   for (let k = st.got.length - 1; k >= 0; k--) S.deck.push(st.got[k]);
   S.deck.push(st.burn);
   if (!R.steps.length) S.rab = null;
-  S.hl = null; S.rvHide = false; sfx('chip', .4); render();
+  S.hl = null; S.rvHide = false; sfx('chip', .4); rabbitLabels(); render();
 }
 // 지금 보드에서 끝까지 갔을 때 각자 이길 확률 — 남은 카드를 전부 깔아 본다(나눠 가지면 나눈 만큼)
 function rabbitEq(ps, bd){
@@ -3728,6 +3830,7 @@ $('felt').addEventListener('click', e => {
   $('profDesc').textContent = prof(p).desc;
   $('profGrid').innerHTML = [['같이 친 핸드', o.h], ['돈 넣고 참여', r(o.vp, o.h)], ['프리플롭 레이즈', r(o.pfr, o.h)], ['눈치', LEARN_T(learnOf(p))]].map(([k, v]) => `<div class="stat"><small>${k}</small><b>${v}</b></div>`).join('');
   $('profRead').innerHTML = rdHTML(p);
+  $('profCard').innerHTML = pcardHTML(p);   // 성격 막대·상대하는 요령
   $('profSheet').hidden = false;
 });
 $('profClose').onclick = () => { $('profSheet').hidden = true; };
