@@ -1443,6 +1443,10 @@ function cardNode(c, faceDown){
     el.classList.remove('down'); el.classList.add('turn');
     el.querySelector('.flip').style.animationDelay = '0ms';
     el.setAttribute('aria-label', c.r + SYM[c.s]);
+  } else if (!el._down && faceDown){   // 다시 엎기(덮고 치기) — 앞면을 숨기기만 하면 하얀 카드가 된다(2026-10-26 David «사람들 패는 하얗게»)
+    el._down = true;
+    el.classList.remove('turn'); el.classList.add('down');
+    el.setAttribute('aria-label', '엎어진 카드');
   }
   return el;
 }
@@ -3140,6 +3144,14 @@ function futBoard(){
   while (n < 5 && i >= 0){ i--; const k = n === 0 ? 3 : 1; for (let j = 0; j < k && i >= 0; j++){ out.push(d[i--]); n++; } }
   return out;
 }
+// 「POT」을 누르면 아직 안 깐 보드 자리 카드만 덱의 다른 카드와 바꾼다 — 같은 손으로 다른 경우의 수(2026-10-26 David «그 다섯 장 카드만 새 걸로 교체»)
+function rerollFut(){
+  const d = S.deck || [], n = S.board.length, pos = []; let i = d.length - 1, m = n;
+  while (m < 5 && i >= 0){ i--; const k = m === 0 ? 3 : 1; for (let j = 0; j < k && i >= 0; j++){ pos.push(i--); m++; } }
+  const rest = d.map((_, k) => k).filter(k => !pos.includes(k));
+  for (const a of pos){ if (!rest.length) break; const r = rest.splice(Math.floor(Math.random() * rest.length), 1)[0]; [d[a], d[r]] = [d[r], d[a]]; }
+  S.eq = null; S.coach = {cls:'tip', text:`보드 ${5 - n}장을 새로 바꿨습니다 — 같은 패로 다른 경우의 수(「POT」을 누를 때마다)`}; render();
+}
 function renderFut(){   // 다 보고 치기: 아직 안 깐 보드 칸에 나올 카드를 앞면으로(깐 카드와 같은 색)
   const sl = $('felt').querySelector('.slots'), on = S.openNow && S.phase === 'play' && !VIEW, fut = on ? futBoard() : [];
   [...sl.children].forEach((x, k) => { const c = k >= S.board.length ? fut[k - S.board.length] : null;
@@ -3939,6 +3951,7 @@ $('felt').addEventListener('click', e => {
       if (!S.openNow && S.phase === 'play') for (const q of S.seats) if (!q.me) for (const c of q.hole) delete c.revealT;
       S.coach = {cls:'tip', text:S.opt.open ? '열고 치기 — 상대 패와 보드 다섯 장이 보입니다(다음 판도 계속 · 보드를 다시 누르면 덮습니다)' : '덮고 치기 — 상대 패와 남은 보드를 덮었습니다(다음 판도 계속)'};
       save(); render(); return; } }
+  if (e.target.closest('.potwrap') && S.openNow && S.phase === 'play' && !VIEW && !MP && S.board.length < 5){ rerollFut(); return; }
   { const ce = e.target.closest('#board .card.rab'); if (ce && S.rab && S.rab.steps.length){ const last = S.rab.steps[S.rab.steps.length - 1].got; if (last.some(c => cardEls.get(c.id) === ce)){ rabbitUndo(); return; } } }
   if ((S.review || S.sd) && S.rvHide && S.phase === 'done' && !e.target.closest('.plate, .sitbtn')){ S.rvHide = false; render(); return; }
   if (VIEW) return;
