@@ -2461,8 +2461,9 @@ $('sizeR').oninput = e => {
 
 /* ---------- 토너먼트 ----------
    테이블 T개 × 자리 NS명. 테이블마다 정해진 인원(adv)이 남을 때까지 치고, 남은 사람은 칩을 그대로 들고 다음 라운드로.
-   다음 라운드 테이블 수 = T ÷ 4(자리가 4의 배수이고 T도 4의 배수일 때) 또는 T ÷ 2 → adv = NS ÷ 그 수.
-   8인 8테이블: 64명 → 각 2명 → 16명(2테이블) → 각 4명 → 8명 최종 테이블.
+   adv 는 라운드마다 4 → 3 → 2명(2026-10-25 David «첫 라운드 4명 → 3명 → 2명 · 최종 테이블에서 1명»).
+   다음 라운드 인원이 NS 이하면 최종 테이블(1명 남을 때까지) · 아니면 NS 씩 나눠 앉는다(덜 찬 자리는 빈 자리).
+   8테이블: 64명 → 32명(4테이블) → 12명(6명씩 2테이블) → 4명 최종 · 4테이블: 32 → 16 → 6명 최종 · 16테이블: 128 → 64 → 24 → 6명 최종.
    내 테이블만 실제로 치고, 다른 테이블은 결과(올라온 사람·칩)만 만든다. 블라인드는 1라운드 100BB · 다음 라운드부터 제일 적은 사람이 20BB인 블라인드에서 시작해 10판마다 ×1.5. */
 const TOUR_T = [4, 8, 16], TOUR_KEY = 'he-tour-v1';
 // 참가비: 4테이블 $200 · 8테이블 $1,000 · 16테이블 $10,000 — 지갑에서 낸다. 시작 칩도 같은 금액(빅 블라인드 100개). 상금 = 참가비 × 참가 인원을 상위 약 1/8 이 나눠 가진다(1위가 가장 크게)
@@ -2512,8 +2513,17 @@ function tourK0(r){
 }
 const tourBlinds = (r, h = 0) => { const k = Math.round(tourK0(r) * 1.5 ** Math.floor(h / TOUR_LVL)); return [k, 2 * k]; };   // 라운드 안에서는 10판마다 ×1.5
 const tourNS = () => S.tour || NS % 2 === 0 ? NS : 8;   // 7인 테이블에서 토너먼트를 열면 8인으로 친다
-function tourStep(T){ if (T <= 1) return {next:0, adv:1}; const n = tourNS(), f = n % 4 === 0 && T % 4 === 0 ? 4 : 2; return {next:T / f, adv:n / f}; }
-function tourRounds(T){ let n = 1; while (T > 1){ T = tourStep(T).next; n++; } return n; }
+// r = 라운드(생략하면 지금 라운드) · next = 다음 라운드 테이블 수 · pl = 다음 라운드 인원
+function tourStep(T, r = S.tour ? S.tour.round : 1){
+  if (T <= 1) return {next:0, adv:1, pl:1};
+  const adv = Math.max(2, 5 - r), pl = T * adv, n = tourNS();
+  return {next:pl <= n ? 1 : Math.ceil(pl / n), adv, pl};
+}
+function tourRounds(T){ let n = 1, r = 1; while (T > 1){ T = tourStep(T, r++).next; n++; } return n; }
+// 대회 소개용 — 라운드마다 테이블당 진출 인원(예: 4→3→2)
+function tourPlan(T){ const out = []; let r = 1; while (T > 1){ const st = tourStep(T, r++); out.push(st.adv); T = st.next; } return out.join('→'); }
+// 인원 pl 을 테이블 k 개에 고르게 — 앞 테이블(내 테이블)이 많은 쪽
+const tourSplit = (pl, k) => Array.from({length:k}, (_, i) => Math.floor(pl / k) + (i < pl % k ? 1 : 0));
 const tourAlive = () => S.seats.filter(p => !p.empty && p.stack > 0);
 // 버블: 이 테이블에서 한 명만 더 떨어지면 통과 — 나보다 훨씬 짧은 사람이 있으면 그 사람 이름(먼저 떨어질 판), 없으면 ''
 function tourBubble(){
@@ -2574,20 +2584,22 @@ function tourAfterHand(){
 }
 // 다음 라운드 테이블: 나와 같이 올라간 사람 + 다른 테이블에서 올라온 사람(칩은 내 테이블 평균 근처)
 function tourAdvance(){
-  const t = S.tour, {next} = tourStep(t.T), mine = tourAlive();
+  const t = S.tour, {next, pl} = tourStep(t.T), mine = tourAlive();
   const avg = mine.reduce((a, p) => a + p.stack, 0) / mine.length;
   const used = new Set(S.seats.map(p => p.name)), fresh = XNAMES.filter(n => !used.has(n)).sort(() => Math.random() - 0.5);
-  const others = mine.filter(p => !p.me), need = NS - mine.length;
+  const sz = tourSplit(Math.min(pl, next * NS), next);   // 테이블마다 앉을 인원 — 덜 찬 자리는 빈 자리
+  const others = mine.filter(p => !p.me), need = Math.max(0, sz[0] - mine.length);
   if (t.others){
     simOthers(t, true);   // 아직 안 끝난 테이블은 끝까지 돌린다
     const pool = t.others.flatMap(tb => tb.ps.filter(q => q.stack > 0)).sort(() => Math.random() - 0.5);
     pool.splice(0, need).forEach(q => others.push(mkSeat({name:q.name, tag:q.tag, like:q.like, ac:q.ac}, q.stack)));
-    t.others = []; for (let k = 0; k + NS <= pool.length; k += NS) t.others.push({ps:pool.slice(k, k + NS)});
+    t.others = []; let k = 0; for (const n of sz.slice(1)){ if (k >= pool.length) break; t.others.push({ps:pool.slice(k, k + n)}); k += n; }
   }
   for (let k = others.length - (mine.length - 1); k < need; k++){
     const like = POOL[Math.floor(Math.random() * POOL.length)];
     others.push(mkSeat({name:fresh[k], tag:like.tag, like:like.name, ac:XCOL[k % XCOL.length]}, Math.max(4 * tourBlinds(t.round + 1)[1], Math.round(avg * rnd(0.55, 1.5)))));
   }
+  while (others.length < NS - 1) others.push(Object.assign(emptySeat(), {vacant:true}));   // 처음부터 빈 자리 — 「탈락」 표시 없음
   others.sort(() => Math.random() - 0.5);
   t.T = next; t.round++; t.pendingAdv = false; t.rh = 0; t.started = false;
   S.seats = [S.seats[0]].concat(others);
@@ -3056,7 +3068,7 @@ function renderSeat(p, i){
     el._plate.style.setProperty('--ac', p.ac);
     setHTML(el._av, '+'); setHTML(el._nm, '빈 자리'); setHTML(el._stk, '');
     el._d.hidden = true; syncCards(el._hole, [], true); setHTML(el._bstack, ''); setHTML(el._bamt, '');
-    setHTML(el._lab, MP ? (MP.T && MP.T.host === MP.pid && p.tIdx != null ? `<button class="sitbtn" data-mpsit="${p.tIdx}">손님 앉히기</button>` : '') : LOBBY ? '' : S.tour ? '<span class="t fold">탈락</span>' : S.phase === 'play' ? '<span class="t fold">핸드 끝나면 앉힐 수 있음</span>' : `<button class="sitbtn" data-sit="${i}">손님 앉히기</button>`);
+    setHTML(el._lab, MP ? (MP.T && MP.T.host === MP.pid && p.tIdx != null ? `<button class="sitbtn" data-mpsit="${p.tIdx}">손님 앉히기</button>` : '') : LOBBY ? '' : S.tour ? (p.vacant ? '' : '<span class="t fold">탈락</span>') : S.phase === 'play' ? '<span class="t fold">핸드 끝나면 앉힐 수 있음</span>' : `<button class="sitbtn" data-sit="${i}">손님 앉히기</button>`);
     return;
   }
   const cls = ['seat'];
@@ -3316,7 +3328,7 @@ function openTourJoin(){
   const w = myMoney();
   $('tjNote').textContent = S.phase === 'play' ? '지금 핸드가 끝나면 참가할 수 있습니다.' : `지갑 ${fmt(w)} · 참가비를 내면 모두 참가비만큼의 칩(빅 블라인드 100개)으로 시작합니다. 테이블마다 상위 몇 명이 다음 라운드로 가고, 블라인드는 라운드마다 두 배가 됩니다. 상금은 참가비 × 인원을 상위 약 1/8이 나눕니다. 지금 ${tourNS()}인 테이블 기준입니다.`;
   $('tjOpts').innerHTML = TOUR_T.map(T => { const fee = TOUR_FEE[T], pr = tourPrizes(T), lack = fee - w;
-    return `<button data-tj="${T}"${S.phase === 'play' || lack > 0 ? ' disabled' : ''}><b><i class="tjc">${(TOUR_NAME[T] || ['', ''])[1]}</i><span class="tn${tourTitle(T).length > 12 ? ' long' : ''}">${tourTitle(T)}</span><small class="fee">${(TOUR_NAME[T] || [])[2] ? `<em class="ven">${TOUR_NAME[T][2]}</em>` : ''}<em>${T}테이블</em>참가비 ${fmt(fee)}</small></b><span>${T * tourNS()}명 · ${tourRounds(T)}라운드 · 상위 ${tourStep(T).adv}명 진출<br>1위 ${fmt(pr[0])} · 상금 ${pr.length}위까지${lack > 0 ? `<em class="lack">${fmt(lack)} 더 있어야 참가</em>` : ''}</span></button>`; }).join('');
+    return `<button data-tj="${T}"${S.phase === 'play' || lack > 0 ? ' disabled' : ''}><b><i class="tjc">${(TOUR_NAME[T] || ['', ''])[1]}</i><span class="tn${tourTitle(T).length > 12 ? ' long' : ''}">${tourTitle(T)}</span><small class="fee">${(TOUR_NAME[T] || [])[2] ? `<em class="ven">${TOUR_NAME[T][2]}</em>` : ''}<em>${T}테이블</em>참가비 ${fmt(fee)}</small></b><span>${T * tourNS()}명 · ${tourRounds(T)}라운드 · 테이블당 ${tourPlan(T)}명 진출<br>1위 ${fmt(pr[0])} · 상금 ${pr.length}위까지${lack > 0 ? `<em class="lack">${fmt(lack)} 더 있어야 참가</em>` : ''}</span></button>`; }).join('');
   $('tjLog').innerHTML = tourLogHTML();
   $('tourJoin').hidden = false;
 }
@@ -3410,12 +3422,12 @@ function openTourGate(){
     $('tgClose').textContent = t.done.quit ? '계속 치기' : '테이블 보기';
     $('tgGo').textContent = '일반 홀덤 테이블로';
   } else {
-    const {next} = tourStep(t.T), [sb, bb] = tourBlinds(t.round + 1);
+    const {next, pl} = tourStep(t.T), [sb, bb] = tourBlinds(t.round + 1);
     $('tgIcon').textContent = '🎉';
     hd.textContent = `라운드 ${t.round} 통과!`; hd.classList.remove('down');
     $('tgSub').textContent = `${tourName(t)} 중 내 테이블에서 상위 ${tourStep(t.T).adv}명 안에 들었습니다`;
     $('tgSum').innerHTML = stat([['내 칩', fmt(me.stack)], ['칩 순위', `${rank}/${all.length}`], ['친 판', t.rh + 1 + '판']]);
-    $('tgNext').innerHTML = `<small>라운드 ${t.round + 1}/${t.rounds}</small>${next === 1 ? '최종 테이블' : next + '개 테이블'} · ${next * NS}명 · 블라인드 ${fmt(sb)}/${fmt(bb)}<br>${next === 1 ? '마지막 1명이 남을 때까지' : `테이블마다 상위 ${tourStep(next).adv}명이 다음 라운드로`}`;
+    $('tgNext').innerHTML = `<small>라운드 ${t.round + 1}/${t.rounds}</small>${next === 1 ? '최종 테이블' : next + '개 테이블'} · ${pl}명 · 블라인드 ${fmt(sb)}/${fmt(bb)}<br>${next === 1 ? '마지막 1명이 남을 때까지' : `테이블마다 상위 ${tourStep(next, t.round + 1).adv}명이 다음 라운드로`}`;
     $('tgGo').textContent = `라운드 ${t.round + 1} 테이블로`; $('tgClose').textContent = '테이블 보기';
   }
   $('tourGate').hidden = false;
