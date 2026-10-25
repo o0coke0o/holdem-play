@@ -1297,12 +1297,13 @@ function save(){
   if (MP || LOBBY) return;   // 친구 대전 화면·입구(빈 6자리)는 내 연습 기록이 아니다 — 입구 자리가 토너먼트에 저장되면 다음에 못 되살렸다
   if (S.phase !== 'play' && !S.tour) walletSet(S.seats[0].stack + S.cents);
   // 토너먼트 기록은 있을 때만 쓴다 — 지우는 것은 exitTour 하나(2026-10-25 David «토너먼트에서 팅김» — 없는 상태가 기록을 덮으면 되살릴 길이 없다)
-  if (S.tour) try { localStorage.setItem(TOUR_KEY, JSON.stringify({tour:S.tour, seats:S.seats.map(p => ({name:p.name, like:p.like, tag:p.tag, ac:p.ac, stack:p.stack, empty:!!p.empty}))})); } catch (e) {}   // 핸드 중에는 걸린 칩이 빠진 값이라 쓰지 않는다
-  try { localStorage.setItem(KEY, JSON.stringify({opt:S.opt, bl:S.bl, stats:S.stats, btn:S.btn, ns:NS, rd:S.rd || {}, rdMe:S.rdMe || null, seats:S.seats.map(p => ({name:p.name, stack:p.stack, empty:!!p.empty}))})); } catch (e) {}
+  if (S.tour) try { const tj = JSON.stringify({at:Date.now(), tour:S.tour, seats:S.seats.map(p => ({name:p.name, like:p.like, tag:p.tag, ac:p.ac, stack:p.stack, empty:!!p.empty}))}); localStorage.setItem(TOUR_KEY, tj); localStorage.setItem(TOUR_KEY + '-bak', tj); } catch (e) {}   // 같은 것을 두 곳에(하나가 깨져도 되살린다) · 핸드 중에는 걸린 칩이 빠진 값이라 쓰지 않는다
+  try { localStorage.setItem(KEY, JSON.stringify({tourOn:!!S.tour, opt:S.opt, bl:S.bl, stats:S.stats, btn:S.btn, ns:NS, rd:S.rd || {}, rdMe:S.rdMe || null, seats:S.seats.map(p => ({name:p.name, stack:p.stack, empty:!!p.empty}))})); } catch (e) {}
 }
 function load(){
   let d = null;
   try { d = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+  S.tourWas = !!(d && d.tourOn);   // 지난번에 토너먼트 중이었나 — 못 되살리면 이유를 화면에
   if (d){ Object.assign(S.opt, d.opt || {}); S.bl = Math.min(BL.length - 1, d.bl | 0); Object.assign(S.stats, d.stats || {}); if (NS_OK.includes(d.ns)) NS = d.ns; S.rd = d.rd || {}; S.rdMe = d.rdMe || {n:0, v:0, b:0}; S.btn = (d.btn | 0) % NS; }
   const sv = (d && d.seats) || [];
   const w = walletGet(), mine = w != null ? w : (sv[0] ? sv[0].stack : 0);
@@ -2896,7 +2897,7 @@ function tourLogHTML(){
 function exitTour(){
   const t = S.tour, me = S.seats[0];
   S.tour = null; if (t.ns0) NS = t.ns0;
-  try { localStorage.removeItem(TOUR_KEY); } catch (e) {}   // 토너먼트 기록을 지우는 유일한 자리
+  try { localStorage.removeItem(TOUR_KEY); localStorage.removeItem(TOUR_KEY + '-bak'); } catch (e) {}   // 토너먼트 기록을 지우는 유일한 자리
   const prize = tourDonePrize(t), back = Math.max(0, t.cash + prize);   // 토너먼트 칩은 돈이 아니다 — 순위 상금만 지갑으로 간다
   if (t.done) tourLogAdd({at:Date.now(), T0:t.T0, field:t.field, place:t.done.place, win:!!t.done.win, quit:!!t.done.quit, round:t.round, rounds:t.rounds, hands:t.hands, fee:t.fee || 0, prize, gain:prize - (t.fee || 0)});
   const v = back >= bbAmt() ? back : 100 * bbAmt();   // 손님은 모두 같은 금액으로 앉는다 · 나는 지갑 그대로(공짜 칩 없음)
@@ -3972,14 +3973,24 @@ document.addEventListener('keydown', e => {
 });
 
 load();
-try {
-  const tv = JSON.parse(localStorage.getItem(TOUR_KEY) || 'null');
-  if (tv && tv.tour && tv.seats && NS_OK.includes(tv.seats.length)){
-    NS = tv.seats.length; S.tour = tv.tour;
-    S.seats = tv.seats.map((x, i) => i === 0 ? mkSeat({name:'나', me:true, ac:'#f1e8d6'}, x.stack) : x.empty ? emptySeat() : mkSeat(x, x.stack));
-    S.btn %= NS;
+{ const why = [];   // 2026-10-25 David «토너먼트에서 팅김 — 아무것도 안 했어, 캡처하고 돌아왔을 뿐» — 원인을 못 잡아 이유를 남긴다
+  for (const k of [TOUR_KEY, TOUR_KEY + '-bak']){
+    try {
+      const raw = localStorage.getItem(k), tv = JSON.parse(raw || 'null');
+      if (!tv){ why.push(`${k === TOUR_KEY ? '본' : '사본'} 없음`); continue; }
+      if (!tv.tour || !tv.seats || !NS_OK.includes(tv.seats.length)){ why.push(`${k === TOUR_KEY ? '본' : '사본'} 자리 ${tv.seats ? tv.seats.length : '?'}`); continue; }
+      NS = tv.seats.length; S.tour = tv.tour;
+      S.seats = tv.seats.map((x, i) => i === 0 ? mkSeat({name:'나', me:true, ac:'#f1e8d6'}, x.stack) : x.empty ? emptySeat() : mkSeat(x, x.stack));
+      S.btn %= NS; if (k !== TOUR_KEY) S.coach = {cls:'tip', text:'토너먼트를 사본에서 되살렸습니다'};
+      break;
+    } catch (e) { S.tour = null; why.push(`${k === TOUR_KEY ? '본' : '사본'} ${e.message}`.slice(0, 80)); }
   }
-} catch (e) { S.tour = null; }
+  if (!S.tour && S.tourWas){ S.coach = {cls:'miss', text:`토너먼트 기록을 되살리지 못했습니다 — ${why.join(' · ')} · 이 화면을 캡처해 보내 주세요`}; try { localStorage.setItem('he-diag', JSON.stringify({at:Date.now(), why})); } catch (e) {} }
+}
+// 2026-10-25 한 번만: 팅긴 US OPEN 참가비 $200 을 지갑에 돌려준다(David «US 대회 중이었고 아무것도 안 했어»)
+try { if (!localStorage.getItem('he-refund-us-1025')){ localStorage.setItem('he-refund-us-1025', '1');
+  if (S.tour) S.tour.cash += 200; else S.seats[0].stack += 200;
+  walletSet(myMoney()); S.coach = {cls:'tip', text:'팅긴 US OPEN 참가비 $200 을 지갑에 돌려드렸습니다'}; } } catch (e) {}
 try { document.body.classList.toggle('ext', window.top === window || /[?&]ext(&|$)/.test(location.search)); } catch (e) {}   // 바깥 사이트에서 직접 열림 = claude.ai 머리줄 자리를 비우지 않는다
 { const fit = () => document.documentElement.style.setProperty('--appH', window.innerHeight + 'px'); fit(); addEventListener('resize', fit); if (window.visualViewport) visualViewport.addEventListener('resize', fit); }
 buildChart(); renderLeak(); buildSeatEls(); syncOpt(); syncNS(); syncTour(); render();
