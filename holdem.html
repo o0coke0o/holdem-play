@@ -640,6 +640,8 @@ body{margin:0}
 #seatG{pointer-events:none}
 .board{z-index:2;min-height:calc(var(--cw)*1.4)}
 .board .card+.card{margin-left:0}
+.slots.open > *{border:none;background:none !important;animation:none !important;box-shadow:none !important}
+.slots .card.fut{position:relative;width:var(--cw);height:calc(var(--cw)*1.4);opacity:.72;filter:saturate(.8)}
 .slots i{width:var(--cw);height:calc(var(--cw)*1.4);border-radius:calc(var(--cw)*.12);border:1px dashed rgba(201,162,74,.22);box-sizing:border-box}
 .card.w5 .front{box-shadow:0 0 0 2px var(--good),0 0 14px rgba(134,211,161,.75)}
 .card.w5{transform:translateY(-5px) scale(1.08);transition:transform .25s,filter .25s;z-index:2}
@@ -1671,6 +1673,7 @@ async function startHand(up = false){   // up — 내 두 장을 앞면으로 �
   if (LOBBY) return;
   if (VIEW) return;
   if (S.phase === 'play') return;
+  S.openNow = !!S.opt.open && !MP;   // 2026-10-26 David «한번 뒤집어 놓으면 다음판부터 보이는 채로 · 다시 뒤집으면 그 다음판부터 뒤집어진 채로»
   if (S.blPend != null){ const n = S.blPend; S.blPend = null; setBlinds(n); }   // 판 도중에 고른 블라인드는 이 판부터
   if (S.tour && (S.tour.done || S.tour.pendingAdv)){ openTourGate(); return; }
   const rp0 = {tour:S.tour ? structuredClone(S.tour) : null, btn:S.btn};   // 「다시」 — 같은 판을 처음부터
@@ -3106,6 +3109,7 @@ function renderSeat(p, i){
   const role = S.phase === 'idle' || S.btn !== i ? '' : S.sbI === i ? '딜러·스몰' : '딜러';
   el._d.hidden = !role;
   if (role && el._d.textContent !== role) el._d.textContent = role;
+  if (S.openNow) for (const c of p.hole) if (!c.revealT) c.revealT = 1;   // 다 보고 치기 — 처음부터 앞면(엎어 받은 카드도 바로 보인다)
   syncCards(el._hole, p.hole, c => !(c.revealT && performance.now() >= c.revealT));
   const wonPile = p.bet <= 0 && p.won > 0 && S.phase === 'done' && $('felt').classList.contains('half');
   setHTML(el._bstack, p.bet > 0 ? stackHTML(p.bet) : wonPile ? wonHTML(p.won, el._bstack.parentNode.dataset.sd) : '');
@@ -3131,6 +3135,17 @@ function fitSdp(){
   const room = Math.floor(f.bottom - lim - 8); if (r.height > room){ p.style.maxHeight = room + 'px'; p.style.overflowY = 'auto'; }
 }
 let fitQ = 0;
+function futBoard(){
+  const d = S.deck || [], out = []; let i = d.length - 1, n = S.board.length;
+  while (n < 5 && i >= 0){ i--; const k = n === 0 ? 3 : 1; for (let j = 0; j < k && i >= 0; j++){ out.push(d[i--]); n++; } }
+  return out;
+}
+function renderFut(){   // 다 보고 치기: 아직 안 깐 보드 칸에 나올 카드를 앞면으로(살짝 어둡게)
+  const sl = $('felt').querySelector('.slots'), on = S.openNow && S.phase === 'play' && !VIEW, fut = on ? futBoard() : [];
+  [...sl.children].forEach((x, k) => { const c = k >= S.board.length ? fut[k - S.board.length] : null;
+    setHTML(x, c ? `<div class="card s-${c.s} fut" aria-label="${c.r}${SYM[c.s]}"><div class="flip"><div class="face front">${cardFace(c)}</div><div class="face bk"></div></div></div>` : ''); });
+  sl.classList.toggle('open', on);
+}
 function render(light){
   if (!fitQ){ fitQ = requestAnimationFrame(() => { fitQ = 0; fitSdp(); }); }
   S.seats.forEach(renderSeat);
@@ -3139,6 +3154,7 @@ function render(light){
   syncView();
   layoutSeats();
   syncCards($('board'), S.board, false);
+  renderFut();
   aimDeals();
   setHTML($('potStack'), potHTML(S.potVis));
   const pt = potTotal();
@@ -3916,6 +3932,11 @@ $('felt').addEventListener('click', e => {
   if (MP){ const rb = e.target.closest('[data-rebuy]'), kb = e.target.closest('[data-kick]'), sb = e.target.closest('[data-mpsit]');
     if (rb) mpSend('rebuy', {who:rb.dataset.rebuy}); else if (kb) mpSend('kick', {who:kb.dataset.kick}); else if (sb) mpBotPick(+sb.dataset.mpsit); return; }
   if (LOBBY) return;
+  { const r = $('felt').querySelector('.slots').getBoundingClientRect();
+    if (!MP && !VIEW && !e.target.closest('#board .card.rab') && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom){
+      S.opt.open = !S.opt.open; if (S.opt.open) S.openNow = true;
+      S.coach = {cls:'tip', text:S.opt.open ? '다 보고 치기 — 상대 패와 보드 다섯 장을 처음부터 보여 드립니다(다음 판도 계속 · 보드를 다시 누르면 다음 판부터 평소대로)' : '다 보고 치기 끔 — 다음 판부터 다시 엎어진 채로 받습니다'};
+      save(); render(); return; } }
   { const ce = e.target.closest('#board .card.rab'); if (ce && S.rab && S.rab.steps.length){ const last = S.rab.steps[S.rab.steps.length - 1].got; if (last.some(c => cardEls.get(c.id) === ce)){ rabbitUndo(); return; } } }
   if ((S.review || S.sd) && S.rvHide && S.phase === 'done' && !e.target.closest('.plate, .sitbtn')){ S.rvHide = false; render(); return; }
   if (VIEW) return;
