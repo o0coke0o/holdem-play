@@ -947,9 +947,11 @@ body:not(.mp) #mpLink{display:none}
 .tcard .pl .me{color:var(--good);font-weight:800}
 .tcard .pl .out{color:rgba(241,232,214,.28);text-decoration:line-through}
 .blindwrap{position:relative;display:inline-flex;align-self:stretch;align-items:stretch}
-.blpop{position:absolute;z-index:45;top:calc(100% + 6px);left:50%;translate:-50% 0;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:12px;background:#140f0c;border:1px solid var(--brass-soft);box-shadow:0 12px 30px rgba(0,0,0,.6)}
+.blpop{position:absolute;z-index:45;top:calc(100% + 6px);left:50%;translate:-50% 0;display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:6px;border-radius:12px;background:#140f0c;border:1px solid var(--brass-soft);box-shadow:0 12px 30px rgba(0,0,0,.6)}
 .blpop[hidden]{display:none}
 .blpop button{font:inherit;font-size:13px;font-weight:800;white-space:nowrap;padding:8px 16px;border-radius:999px;border:1px solid var(--brass-soft);background:transparent;color:var(--ivory);cursor:pointer}
+.blpop button:disabled{opacity:.45;cursor:default}
+.blpop button small{display:block;font-size:10px;font-weight:700;color:var(--muted)}
 .blpop button[aria-pressed="true"]{background:var(--brass);color:var(--ink);border-color:var(--brass)}
 #lastSheet .tool{white-space:nowrap}
 .coachwrap{position:relative;flex:none;display:flex;gap:6px;align-items:stretch}
@@ -1012,7 +1014,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
   <div class="tools">
     <button class="tool tblbtn" id="tTable">테이블 바꾸기</button>
     <span class="blindwrap"><button class="blindpill" id="blindPill" aria-haspopup="true"></button>
-      <span class="blpop" id="blPop" hidden><button data-bl="0">$1 / $2</button><button data-bl="1">$2 / $4</button><button data-bl="2">$3 / $6</button></span></span>
+      <span class="blpop" id="blPop" hidden></span></span>
     <button class="tourpill" id="tourPill">🏆 토너먼트</button>
     <button class="tool menuBtn" id="tMenu" aria-expanded="false">메뉴 ▾</button>
   </div>
@@ -1225,7 +1227,7 @@ let NS = 7;   // 자리 수(나 포함) — 4 · 6 · 8 중에서 고른다(메�
 const NS_OK = [4, 7, 8];
 // 카드: 덱에서 미끄러져 오는 시간 · 도착 뒤 뒤집기까지 쉼 · 뒤집는 시간 · 다음 장까지 간격
 const SLIDE = 380, PAUSE = 120, TURN = 360, GAP = 115;
-const BL = [[1,2],[2,4],[3,6]];   // 기본 $1/$2
+const BL = [[1,2],[2,4],[3,6],[5,10],[10,20],[25,50],[50,100]];   // 기본 $1/$2 · 2026-10-25 David «더 큰 스몰 빅 옵션도» — 메뉴(#blPop)는 이 배열에서 그린다
 // 컴퓨터 손님 — 성격: tight(좋은 패만) · aggr(베팅·레이즈 성향) · bluff(약한 패로 베팅)
 const POOL = [
   {name:'Mike',  tag:'공격형', tight:.2,  aggr:.9,  bluff:.2,  ac:'#e07a5f'},
@@ -1292,9 +1294,10 @@ function sitGuest(i){
   sfx('chip', .6); save(); render();
 }
 function save(){
-  if (MP) return;   // 친구 대전 화면은 내 연습 기록이 아니다
+  if (MP || LOBBY) return;   // 친구 대전 화면·입구(빈 6자리)는 내 연습 기록이 아니다 — 입구 자리가 토너먼트에 저장되면 다음에 못 되살렸다
   if (S.phase !== 'play' && !S.tour) walletSet(S.seats[0].stack + S.cents);
-  try { localStorage.setItem(TOUR_KEY, JSON.stringify(S.tour ? {tour:S.tour, seats:S.seats.map(p => ({name:p.name, like:p.like, tag:p.tag, ac:p.ac, stack:p.stack, empty:!!p.empty}))} : null)); } catch (e) {}   // 핸드 중에는 걸린 칩이 빠진 값이라 쓰지 않는다
+  // 토너먼트 기록은 있을 때만 쓴다 — 지우는 것은 exitTour 하나(2026-10-25 David «토너먼트에서 팅김» — 없는 상태가 기록을 덮으면 되살릴 길이 없다)
+  if (S.tour) try { localStorage.setItem(TOUR_KEY, JSON.stringify({tour:S.tour, seats:S.seats.map(p => ({name:p.name, like:p.like, tag:p.tag, ac:p.ac, stack:p.stack, empty:!!p.empty}))})); } catch (e) {}   // 핸드 중에는 걸린 칩이 빠진 값이라 쓰지 않는다
   try { localStorage.setItem(KEY, JSON.stringify({opt:S.opt, bl:S.bl, stats:S.stats, btn:S.btn, ns:NS, rd:S.rd || {}, rdMe:S.rdMe || null, seats:S.seats.map(p => ({name:p.name, stack:p.stack, empty:!!p.empty}))})); } catch (e) {}
 }
 function load(){
@@ -2893,6 +2896,7 @@ function tourLogHTML(){
 function exitTour(){
   const t = S.tour, me = S.seats[0];
   S.tour = null; if (t.ns0) NS = t.ns0;
+  try { localStorage.removeItem(TOUR_KEY); } catch (e) {}   // 토너먼트 기록을 지우는 유일한 자리
   const prize = tourDonePrize(t), back = Math.max(0, t.cash + prize);   // 토너먼트 칩은 돈이 아니다 — 순위 상금만 지갑으로 간다
   if (t.done) tourLogAdd({at:Date.now(), T0:t.T0, field:t.field, place:t.done.place, win:!!t.done.win, quit:!!t.done.quit, round:t.round, rounds:t.rounds, hands:t.hands, fee:t.fee || 0, prize, gain:prize - (t.fee || 0)});
   const v = back >= bbAmt() ? back : 100 * bbAmt();   // 손님은 모두 같은 금액으로 앉는다 · 나는 지갑 그대로(공짜 칩 없음)
@@ -3485,9 +3489,12 @@ function setBlinds(n){
 $('blindPill').onclick = e => {
   e.stopPropagation();
   if (S.tour){ S.coach = {cls:'', text:`토너먼트 블라인드는 10판마다 ×1.5 · 다음 라운드는 제일 적은 사람 20BB에서 시작 — 지금 ${fmt(sbAmt())}/${fmt(bbAmt())}, 다음 라운드 ${fmt(tourBlinds(S.tour.round + 1)[0])}/${fmt(tourBlinds(S.tour.round + 1)[1])}`}; render(); return; }
-  document.querySelectorAll('#blPop [data-bl]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.bl === S.bl));
+  // 칩(= 지갑)이 20BB 안 되는 단계는 못 고른다 — 1BB 로 앉는 판이 된다
+  document.querySelectorAll('#blPop [data-bl]').forEach(b => { const i = +b.dataset.bl, need = 20 * BL[i][1], lack = i !== S.bl && myMoney() < need;
+    b.setAttribute('aria-pressed', i === S.bl); b.disabled = lack; b.innerHTML = `$${BL[i][0]} / $${BL[i][1]}${lack ? `<small>${fmt(need)}부터</small>` : ''}`; });
   $('blPop').hidden = !$('blPop').hidden;
 };
+$('blPop').innerHTML = BL.map(([s, b], i) => `<button data-bl="${i}">$${s} / $${b}</button>`).join('');
 $('blPop').onclick = e => { e.stopPropagation(); const b = e.target.closest('[data-bl]'); if (!b) return; $('blPop').hidden = true; setBlinds(+b.dataset.bl); };
 document.addEventListener('click', () => { $('blPop').hidden = true; });
 $('tBuy').onclick = () => $('bBuy').onclick();
@@ -3538,6 +3545,7 @@ $('tableSheet').addEventListener('click', e => {
   const b = e.target.closest('.tbl'); if (!b) return;
   $('tableSheet').hidden = true;
   const t = b.dataset.t; if (t === 'he' || (t === 'mp' && MP)) return;
+  if (t === 'mp' && S.tour){ S.coach = {cls:'miss', text:'토너먼트 중에는 Friend Match 로 갈 수 없습니다 — 토너먼트를 마치거나 [그만하기] 뒤에'}; render(); return; }
   if (VIEW) exitView();
   if (S.phase === 'play') abandonHand();
   save();
