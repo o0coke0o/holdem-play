@@ -730,6 +730,8 @@ body{margin:0}
 .seat[data-pos="3"] .dbtn,.seat[data-pos="4"] .dbtn{right:calc(100% + 4px);bottom:24px}
 .sbet{position:absolute;z-index:2;display:flex;flex-direction:column;align-items:center;gap:0;pointer-events:none}
 .sbet .stack{width:40px;height:26px;transform:scale(.4);transform-origin:50% 100%;margin-top:-16px}   /* 2026-10-25 David «칩 크기 거의 절반» .7 → .4 */
+.sbet[data-sd="l"]{align-items:flex-start} .sbet[data-sd="l"] .stack{margin-left:-12px}
+.sbet[data-sd="r"]{align-items:flex-end} .sbet[data-sd="r"] .stack{margin-right:-12px}
 .sbet .amt{font-size:10.5px;font-weight:800;color:var(--ivory);text-shadow:0 1px 2px rgba(0,0,0,.8);font-variant-numeric:tabular-nums;white-space:nowrap}
 .seat[data-pos="0"] .sbet{left:0;right:0;margin-inline:auto;width:60px;top:-50px}
 .seat[data-pos="1"] .sbet,.seat[data-pos="2"] .sbet{left:calc(100% + 2px);top:calc(var(--cw) * .7 - 14px)}
@@ -1544,9 +1546,9 @@ const TOK = {100:'--chip100', 20:'--chip20', 5:'--chip5', 1:'--chip1'};
 function chipsOf(a){ const out = []; a = Math.round(a); for (const v of [100, 20, 5, 1]) while (a >= v && out.length < 60){ out.push(v); a -= v; } return out; }
 // 실제 칩 단위로 쌓는다($7 = $5 한 개 + $1 두 개) — 칩 사이를 벌려 색이 한 장씩 보이게
 // 판 끝 이긴 사람 앞에 쌓이는 칩 — 칩 값별 기둥, 한 개씩 위에서 떨어진다
-function wonHTML(a){
+function wonHTML(a, sd = ''){   // sd: l = 오른쪽(테이블 쪽)으로 · r = 왼쪽으로 줄을 늘린다 — 옆자리 카드를 덮지 않게
   const g = {}; for (const v of chipsOf(a)) g[v] = (g[v] || 0) + 1;
-  const vs = [100, 20, 5, 1].filter(v => g[v]), w = 22, x0 = 9 - (vs.length - 1) * w / 2; let n0 = 0;
+  const vs = [100, 20, 5, 1].filter(v => g[v]), w = 22, x0 = 9 - (vs.length - 1) * w * (sd === 'l' ? 0 : sd === 'r' ? 1 : .5); let n0 = 0;
   return vs.map((v, k) => { const n = Math.min(g[v], 8), h = Array.from({length:n}, (_, i) => `<i class="pc drop" style="--c:var(${TOK[v]});bottom:${i * 7}px;z-index:${i};animation-delay:${(n0 + i) * 70}ms"></i>`).join(''); n0 += n; return `<span class="wcol" style="left:${x0 + k * w}px">${h}</span>`; }).join('');
 }
 function stackHTML(a){ return chipsOf(a).slice(0, 10).map((v, i) => `<i class="pc" style="--c:var(${TOK[v]});bottom:${i * 7}px;z-index:${i}"></i>`).join(''); }
@@ -3028,12 +3030,13 @@ function layoutSeats(){
   // 카드 칸 폭은 재지 않고 카드 크기(--cw)로 센다 — 이 배치는 화면 크기가 바뀔 때만 돌아서 그때는 카드가 아직 없다(폭 0)
   const side = (sv) => { const lf = sv.x < cx, top = sv.y - sv.pc, cw = parseFloat(getComputedStyle(sv.el).getPropertyValue('--cw')) || 36;
     // 2026-10-25 David «자기 앞도 헷갈린다 자기 패 살짝 걸치게» — 칩 가운데 = 테이블 쪽 카드 끝에서 6px 안쪽(칩 반쯤이 카드 위)
-    return [sv.x + (lf ? 1 : -1) * (cw * 0.8 - 6), top + cw * 1.05]; };   // 카드 아래쪽(이름표 바로 위)에 걸친다 — 카드 숫자를 안 가리게
+    return [sv.x + (lf ? 1 : -1) * (cw * 0.8 + 2), top + cw * 1.05, lf ? 'l' : 'r']; };   // 2026-10-25 David «패를 다 가려버리잖아 배팅이» — 칩 안쪽 끝이 카드 끝에 닿고(걸치지 않음) 금액 글씨는 테이블 쪽으로 자란다   // 카드 아래쪽(이름표 바로 위)에 걸친다 — 카드 숫자를 안 가리게
   const mine = sv => { const cw = parseFloat(getComputedStyle(sv.el).getPropertyValue('--cw')) || 50; return [sv.x + cw * 0.95 - 6, sv.y - sv.pc - cw * 0.75]; };   // 내 오른쪽 카드 윗모서리에 걸친다   // 내 카드 오른쪽 위 어깨 — 카드에 붙어 테이블 안쪽
   seats.forEach((sv, k) => {
     const sp = sv.el.dataset.pos === '0' && HP ? mine(sv) : sv.el.dataset.pos !== '0' && sv.el.dataset.pos !== 't' && sv.el.dataset.pos !== 'b' ? side(sv, k) : null;
-    const [bx, by] = toSeat(sv, ...(sp || place(sv, 46, 40, ROT)));
-    Object.assign(sv.el._bstack.parentNode.style, {left:(bx - 23) + 'px', top:(by - 20) + 'px', right:'auto', bottom:'auto', width:'46px', margin:'0'});
+    const [bx, by] = toSeat(sv, ...(sp || place(sv, 46, 40, ROT))), sd = sp && sp[2] || '', bs = sv.el._bstack.parentNode;
+    bs.dataset.sd = sd;   // l = 칩 왼끝이 기준점 · r = 칩 오른끝이 기준점 · '' = 가운데
+    Object.assign(bs.style, {left:(sd === 'l' ? bx : sd === 'r' ? bx - 46 : bx - 23) + 'px', top:(by - 20) + 'px', right:'auto', bottom:'auto', width:'46px', margin:'0'});
   });
   for (const sv of seats){
     const [dx, dy] = toSeat(sv, ...place(sv, 58, 20, [60, -60, 90, -90, 30, -30, 120, -120, 0]));
@@ -3101,7 +3104,7 @@ function renderSeat(p, i){
   if (role && el._d.textContent !== role) el._d.textContent = role;
   syncCards(el._hole, p.hole, c => !(c.revealT && performance.now() >= c.revealT));
   const wonPile = p.bet <= 0 && p.won > 0 && S.phase === 'done' && $('felt').classList.contains('half');
-  setHTML(el._bstack, p.bet > 0 ? stackHTML(p.bet) : wonPile ? wonHTML(p.won) : '');
+  setHTML(el._bstack, p.bet > 0 ? stackHTML(p.bet) : wonPile ? wonHTML(p.won, el._bstack.parentNode.dataset.sd) : '');
   setHTML(el._bamt, p.bet > 0 ? fmt(p.bet) : wonPile ? `<b class="wonamt">+${fmt(p.won)}</b>` : '');
   const lab = p.rebuy ? `<button class="sitbtn" data-rebuy="${esc(p.pid)}">칩 +${fmt(MP.T.start)} 주기</button>` : p.kick && S.phase !== 'play' ? `<button class="sitbtn" data-kick="${esc(p.pid)}">내보내기</button>` : p.me && S.opt.eq && S.phase === 'play' && !p.folded && eqTrack() ? eqTrack() : S.toAct === i && !p.me ? `<span class="t think">${esc(S.think || '생각 중')}</span>` : p.label && !lp ? `<span class="t ${p.label.c}">${esc(p.label.t)}</span>` : '';
   setHTML(el._lab, lab);
