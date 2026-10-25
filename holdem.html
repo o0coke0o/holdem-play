@@ -641,8 +641,8 @@ body{margin:0}
 .board{z-index:2;min-height:calc(var(--cw)*1.4)}
 .board .card+.card{margin-left:0}
 .slots.open > *{border:none;background:none !important;animation:none !important;box-shadow:none !important}
-.slots .card.fut{position:relative;width:var(--cw);height:calc(var(--cw)*1.4);opacity:.72;filter:saturate(.8)}
-.slots i{width:var(--cw);height:calc(var(--cw)*1.4);border-radius:calc(var(--cw)*.12);border:1px dashed rgba(201,162,74,.22);box-sizing:border-box}
+.slots .card.fut{position:relative;width:var(--cw);height:calc(var(--cw)*1.4)}   /* 2026-10-26 David «색깔이 이상한데 그럴필요없어» — 흐리게 하지 않는다 */
+.slots > i{width:var(--cw);height:calc(var(--cw)*1.4);border-radius:calc(var(--cw)*.12);border:1px dashed rgba(201,162,74,.22);box-sizing:border-box}
 .card.w5 .front{box-shadow:0 0 0 2px var(--good),0 0 14px rgba(134,211,161,.75)}
 .card.w5{transform:translateY(-5px) scale(1.08);transition:transform .25s,filter .25s;z-index:2}
 .card.dim{transform:scale(.93);transition:transform .25s,filter .25s}
@@ -3140,7 +3140,7 @@ function futBoard(){
   while (n < 5 && i >= 0){ i--; const k = n === 0 ? 3 : 1; for (let j = 0; j < k && i >= 0; j++){ out.push(d[i--]); n++; } }
   return out;
 }
-function renderFut(){   // 다 보고 치기: 아직 안 깐 보드 칸에 나올 카드를 앞면으로(살짝 어둡게)
+function renderFut(){   // 다 보고 치기: 아직 안 깐 보드 칸에 나올 카드를 앞면으로(깐 카드와 같은 색)
   const sl = $('felt').querySelector('.slots'), on = S.openNow && S.phase === 'play' && !VIEW, fut = on ? futBoard() : [];
   [...sl.children].forEach((x, k) => { const c = k >= S.board.length ? fut[k - S.board.length] : null;
     setHTML(x, c ? `<div class="card s-${c.s} fut" aria-label="${c.r}${SYM[c.s]}"><div class="flip"><div class="face front">${cardFace(c)}</div><div class="face bk"></div></div></div>` : ''); });
@@ -3934,8 +3934,10 @@ $('felt').addEventListener('click', e => {
   if (LOBBY) return;
   { const r = $('felt').querySelector('.slots').getBoundingClientRect();
     if (!MP && !VIEW && !e.target.closest('#board .card.rab') && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom){
-      S.opt.open = !S.opt.open; if (S.opt.open) S.openNow = true;
-      S.coach = {cls:'tip', text:S.opt.open ? '다 보고 치기 — 상대 패와 보드 다섯 장을 처음부터 보여 드립니다(다음 판도 계속 · 보드를 다시 누르면 다음 판부터 평소대로)' : '다 보고 치기 끔 — 다음 판부터 다시 엎어진 채로 받습니다'};
+      // 2026-10-26 David «열고치던 덮고치던 버튼처럼, 다음판도 이어지게» — 누르는 즉시 지금 판도 열리고/덮인다
+      S.opt.open = !S.opt.open; S.openNow = S.opt.open;
+      if (!S.openNow && S.phase === 'play') for (const q of S.seats) if (!q.me) for (const c of q.hole) delete c.revealT;
+      S.coach = {cls:'tip', text:S.opt.open ? '열고 치기 — 상대 패와 보드 다섯 장이 보입니다(다음 판도 계속 · 보드를 다시 누르면 덮습니다)' : '덮고 치기 — 상대 패와 남은 보드를 덮었습니다(다음 판도 계속)'};
       save(); render(); return; } }
   { const ce = e.target.closest('#board .card.rab'); if (ce && S.rab && S.rab.steps.length){ const last = S.rab.steps[S.rab.steps.length - 1].got; if (last.some(c => cardEls.get(c.id) === ce)){ rabbitUndo(); return; } } }
   if ((S.review || S.sd) && S.rvHide && S.phase === 'done' && !e.target.closest('.plate, .sitbtn')){ S.rvHide = false; render(); return; }
