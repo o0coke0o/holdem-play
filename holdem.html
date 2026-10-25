@@ -2239,8 +2239,10 @@ function advise(){
     if (S.tour && sbb <= 12 && S.raises <= 1){
       const shp = S.raises ? (S.lastAgg === S.btn ? '버튼' : S.lastAgg === S.sbI ? '스몰 블라인드' : nextSeat(S.lastAgg) === S.btn ? '컷오프' : '앞자리') : '';
       // 받는 폭(10BB 기준): 앞자리 올인 8% · 컷오프 14% · 버튼 20% · 스몰 블라인드 30% — 2026-10-25 프로 기준(내시 균형표 모양)
-      const base = S.raises ? ({'앞자리':0.08, '컷오프':0.14, '버튼':0.20, '스몰 블라인드':0.30}[shp]) : ({'앞자리':0.12, '하이잭':0.17, '컷오프':0.25, '버튼':0.36, '스몰 블라인드':0.50, '빅 블라인드':0.30}[pos] || 0.15), bub = tourBubble(), th = Math.min(0.8, base * Math.sqrt(10 / Math.max(3, sbb))) * (bub != null ? (S.raises ? 0.5 : 0.65) : 1);   // 버블이면 받는 폭 절반 · 올인 폭 ⅔(살아남는 것이 칩보다 값지다)
-      const bubT = bub != null ? ` · 버블(한 명만 더 떨어지면 통과)이라 ${bub ? bub + '이 먼저 떨어질 판이어서 ' : ''}나를 덮는 상대와 붙는 패를 줄인 기준입니다` : '';
+      const base = S.raises ? ({'앞자리':0.08, '컷오프':0.14, '버튼':0.20, '스몰 블라인드':0.30}[shp]) : ({'앞자리':0.12, '하이잭':0.17, '컷오프':0.25, '버튼':0.36, '스몰 블라인드':0.50, '빅 블라인드':0.30}[pos] || 0.15), bub = tourBubble(), cov = S.seats.find(q => !q.me && !q.folded && !q.empty && q.stack + q.bet >= me.stack + me.bet),
+        bf = bub == null ? 1 : bub && cov ? 0.2 : S.raises ? 0.5 : 0.65,   // 2026-10-25 David «Kenji 가 강한 패라 받으면?» — 짧은 사람이 먼저 떨어질 버블에서 나를 덮는 상대와는 거의 안 붙는다(올인·받기 모두 ⅕)
+        th = Math.min(0.8, base * Math.sqrt(10 / Math.max(3, sbb))) * bf;
+      const bubT = bub == null ? '' : bub && cov ? ` · 버블(한 명만 더 떨어지면 통과)입니다. ${bub}${eun(bub)} 칩이 거의 없어 기다리면 먼저 떨어지는데, 나보다 칩이 많은 ${cov.name}${eun(cov.name)} 강한 패로 받으면 내가 대신 떨어집니다 — 그래서 ${cov.name}와는 최상위 패로만 붙습니다(칩은 다음 라운드로 그대로 가져갑니다)` : ` · 버블(한 명만 더 떨어지면 통과)이라 붙는 패를 줄인 기준입니다`;
       if (tp <= th) return R('raise', o.maxTo, `올인 ${$$(o.maxTo)} 추천 (칩 ${sbb.toFixed(0)}BB)`, `${nm}${eun(nm)} 시작 패 ${rk(tp)} — 칩이 ${sbb.toFixed(0)}BB뿐이면 올인 아니면 폴드입니다 — 작게 올렸다가 다시 올인을 받으면 칩이 모자라 어차피 따라가야 해서, 처음부터 올인으로 상대를 접게 만드는 힘을 다 씁니다. ${S.raises ? '레이즈를 받았을 때' : pos + '에서'} 올인 기준은 상위 ${P(th)}${bubT}`);
       if (!(pos === '빅 블라인드' && o.toCall === 0)) return R('fold', null, '폴드 추천', `${nm}${eun(nm)} 시작 패 ${rk(tp)} — 칩이 ${sbb.toFixed(0)}BB뿐이면 올인 아니면 폴드인데, ${S.raises ? '레이즈를 받았을 때' : pos + '에서'} 올인 기준(상위 ${P(th)}) 밖입니다${bubT}`);
     }
