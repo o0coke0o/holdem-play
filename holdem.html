@@ -1825,6 +1825,8 @@ async function showdown(){
   S.phase = 'done';
   save(); render();
   setTimeout(() => { if (S.phase === 'done' && !S.peek) peekAll(); }, 900);
+  // 모두 폴드로 끝나면 플롭 3장을 저절로 깐다 — [받아보기]와 같은 길(턴·리버는 그 버튼으로) · 2026-10-25 David «모두 폴드하는 순간 보드 3장 뒤집어서 보여줘»
+  if (al.length === 1 && S.board.length < 3 && !MP && !VIEW){ const h0 = S.hist[0]; setTimeout(() => { if (S.phase === 'done' && S.hist[0] === h0 && !S.rab) rabbitDeal(); }, 950); }
   if (S.tour && (S.tour.done || S.tour.pendingAdv)) setTimeout(() => { if (S.phase === 'done' && !VIEW && S.tour && (S.tour.done || S.tour.pendingAdv)) openTourGate(); }, 2600);   // 매 판 저절로 패를 열어 복기
   if (!S.tour && me.stack < bbAmt()) setTimeout(() => { if (!S.tour && S.phase !== 'play' && S.seats[0].stack < bbAmt()) { S.coach = {cls:'tip', text:`칩이 다 떨어졌습니다 — [다음 핸드]를 누르면 +${fmt(REFILL)} 받고 앉습니다 · [+$100 받기]도 누를 때마다 +${fmt(REFILL)}`}; render(); } }, 1400);
 }
