@@ -2473,7 +2473,7 @@ const TOUR_START = {4:200, 8:1000, 16:10000};
 const TOUR_NAME = {4:['US OPEN', 'US', '아틀란틱시티'], 8:['MASTERS', 'M', '아틀란틱시티'], 16:['GRAND CHAMPIONSHIP', 'GC', '라스베이거스']};
 const tourTitle = T => (TOUR_NAME[T] || [`${T}테이블`])[0];
 function tourPrizes(T){
-  const field = T * NS, pool = TOUR_FEE[T] * field, paid = Math.max(2, Math.round(field / 8));
+  const field = T * tourNS(), pool = TOUR_FEE[T] * field, paid = Math.max(2, Math.round(field / 8));
   const w = Array.from({length:paid}, (_, k) => 1 / (k + 1)), tw = w.reduce((a, b) => a + b, 0);
   const pr = w.map(x => Math.floor(pool * x / tw / 10) * 10);   // $10 단위 · 남는 돈은 1위에
   pr[0] += pool - pr.reduce((a, b) => a + b, 0);
