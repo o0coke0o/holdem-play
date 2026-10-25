@@ -1257,7 +1257,8 @@ const S = {
   curBet:0, minRaise:0, raises:0, toAct:-1, wait:null, size:0,
   hist:[], log:[], cents:0, banner:null, coach:{cls:'', text:''}, eq:null, quick:false, hl:null, vp:false, start0:0
 };
-const bbAmt = () => MP && MP.T ? MP.T.bb : S.tour ? tourBlinds(S.tour.round, S.tour.rh)[1] : BL[S.bl][1], sbAmt = () => MP && MP.T ? MP.T.sb : S.tour ? tourBlinds(S.tour.round, S.tour.rh)[0] : BL[S.bl][0];
+const tourBl = t => t.ov || tourBlinds(t.round, t.rh);   // t.ov = 직접 고른 단계(이 라운드 동안 · 10판 올림 멈춤)
+const bbAmt = () => MP && MP.T ? MP.T.bb : S.tour ? tourBl(S.tour)[1] : BL[S.bl][1], sbAmt = () => MP && MP.T ? MP.T.sb : S.tour ? tourBl(S.tour)[0] : BL[S.bl][0];
 const alive = () => S.seats.filter(p => !p.folded);
 const actors = () => S.seats.filter(p => !p.folded && !p.allin);
 const potTotal = () => S.pot + S.seats.reduce((a, p) => a + p.bet, 0);
@@ -1665,11 +1666,12 @@ async function revealAll(){
   for (const p of alive()) if (!p.me && !p.show){ p.show = true; flipHole(p); any = true; }
   if (any) await sleep(FLIP2 + TURN + 220);
 }
-async function startHand(){
+async function startHand(up = false){   // up — 내 두 장을 앞면으로 받는다(셔플 · 2026-10-26 David «뒤집어서 말고 바로 보이게»)
   if (MP){ mpSend('start'); return; }
   if (LOBBY) return;
   if (VIEW) return;
   if (S.phase === 'play') return;
+  if (S.blPend != null){ const n = S.blPend; S.blPend = null; setBlinds(n); }   // 판 도중에 고른 블라인드는 이 판부터
   if (S.tour && (S.tour.done || S.tour.pendingAdv)){ openTourGate(); return; }
   const rp0 = {tour:S.tour ? structuredClone(S.tour) : null, btn:S.btn};   // 「다시」 — 같은 판을 처음부터
   if (S.tour){ const t = S.tour, was = bbAmt(); t.rh = (t.rh || 0) + (t.started ? 1 : 0); t.started = true; if (bbAmt() !== was) S.tourNote = `블라인드가 ${fmt(sbAmt())}/${fmt(bbAmt())}로 올랐습니다`; }
@@ -1700,11 +1702,10 @@ async function startHand(){
   S.curBet = Math.max(...S.seats.map(p => p.bet));
   render(); sfx('chip', .6);
   await sleep(320);
-  for (let r = 0; r < 2; r++) for (let k = 1; k <= NS; k++){ const q = S.seats[(S.btn + k) % NS]; if (q.empty) continue; q.hole.push(S.deck.pop()); render(); await sleep(GAP); }
-  // 다 받은 뒤 내 두 장을 왼쪽부터 거의 함께 뒤집는다
+  for (let r = 0; r < 2; r++) for (let k = 1; k <= NS; k++){ const q = S.seats[(S.btn + k) % NS]; if (q.empty) continue; const c = S.deck.pop(); if (up && q.me) c.revealT = 1; q.hole.push(c); render(); await sleep(GAP); }
+  // 다 받은 뒤 내 두 장을 왼쪽부터 거의 함께 뒤집는다(앞면으로 받았으면 뒤집지 않는다)
   await sleep(SLIDE - GAP + 60);
-  flipHole(S.seats[0]);
-  await sleep(FLIP2 + TURN + 40);
+  if (!up){ flipHole(S.seats[0]); await sleep(FLIP2 + TURN + 40); }
   render();
   await bettingRound((bbI + 1) % NS);
   let runout = false;
@@ -2601,7 +2602,10 @@ function tourAdvance(){
     simOthers(t, true);   // 아직 안 끝난 테이블은 끝까지 돌린다
     const pool = t.others.flatMap(tb => tb.ps.filter(q => q.stack > 0)).sort(() => Math.random() - 0.5);
     pool.splice(0, need).forEach(q => others.push(mkSeat({name:q.name, tag:q.tag, like:q.like, ac:q.ac}, q.stack)));
-    t.others = []; let k = 0; for (const n of sz.slice(1)){ if (k >= pool.length) break; t.others.push({ps:pool.slice(k, k + n)}); k += n; }
+    t.others = []; let k = 0, f = 0; const used2 = new Set([...used, ...pool.map(q => q.name)]), extra = XNAMES.filter(n => !used2.has(n)).sort(() => Math.random() - 0.5);
+    for (const n of sz.slice(1)){ const ps = pool.slice(k, k + n); k += n;   // 2026-10-26 David «4개 테이블인데 남은 테이블이 2개 뿐?» — 모자란 자리는 새 사람으로
+      while (ps.length < n && f < extra.length){ const like = POOL[Math.floor(Math.random() * POOL.length)]; ps.push({name:extra[f], tag:like.tag, like:like.name, ac:XCOL[f++ % XCOL.length], stack:Math.max(4 * tourBlinds(t.round + 1)[1], Math.round(avg * rnd(0.55, 1.5)))}); }
+      if (ps.length) t.others.push({ps}); }
   }
   for (let k = others.length - (mine.length - 1); k < need; k++){
     const like = POOL[Math.floor(Math.random() * POOL.length)];
@@ -2609,7 +2613,7 @@ function tourAdvance(){
   }
   while (others.length < NS - 1) others.push(Object.assign(emptySeat(), {vacant:true}));   // 처음부터 빈 자리 — 「탈락」 표시 없음
   others.sort(() => Math.random() - 0.5);
-  t.T = next; t.round++; t.pendingAdv = false; t.rh = 0; t.started = false;
+  t.T = next; t.round++; t.pendingAdv = false; t.rh = 0; t.started = false; delete t.ov;
   S.seats = [S.seats[0]].concat(others);
   S.btn = Math.floor(Math.random() * NS);
   buildSeatEls();
@@ -3481,8 +3485,9 @@ document.querySelectorAll('[data-ns]').forEach(b => b.onclick = () => {
   if (S.phase === 'play'){ S.coach = {cls:'miss', text:'이 핸드가 끝난 뒤에 인원을 바꿀 수 있습니다'}; render(); return; }
   setNS(+b.dataset.ns);
 });
-function setBlinds(n){
-  if (S.phase === 'play'){ S.coach = {cls:'miss', text:'이 핸드가 끝난 뒤에 블라인드를 바꿀 수 있습니다'}; render(); return; }
+function setBlinds(n){   // 2026-10-26 David «게임중일때도 눌러서 바꿀수 있게 · 게임중이면 적용은 다음판부터» — 토너먼트도 고를 수 있다
+  if (S.phase === 'play'){ S.blPend = n; S.coach = {cls:'tip', text:`블라인드 $${BL[n][0]}/$${BL[n][1]} — 다음 판부터 적용합니다`}; render(); return; }
+  if (S.tour){ S.tour.ov = BL[n].slice(); S.coach = {cls:'', text:`블라인드 ${fmt(sbAmt())}/${fmt(bbAmt())} — 이 라운드 동안 그대로(다음 라운드는 대회 블라인드로 돌아갑니다)`}; save(); render(); return; }
   if (n === S.bl) return;
   S.bl = n;
   sitAll(Math.max(S.seats[0].stack, bbAmt()));
@@ -3492,10 +3497,9 @@ function setBlinds(n){
 }
 $('blindPill').onclick = e => {
   e.stopPropagation();
-  if (S.tour){ S.coach = {cls:'', text:`토너먼트 블라인드는 10판마다 ×1.5 · 다음 라운드는 제일 적은 사람 20BB에서 시작 — 지금 ${fmt(sbAmt())}/${fmt(bbAmt())}, 다음 라운드 ${fmt(tourBlinds(S.tour.round + 1)[0])}/${fmt(tourBlinds(S.tour.round + 1)[1])}`}; render(); return; }
   // 칩(= 지갑)이 20BB 안 되는 단계는 못 고른다 — 1BB 로 앉는 판이 된다
-  document.querySelectorAll('#blPop [data-bl]').forEach(b => { const i = +b.dataset.bl, need = 20 * BL[i][1], lack = i !== S.bl && myMoney() < need;
-    b.setAttribute('aria-pressed', i === S.bl); b.disabled = lack; b.innerHTML = `$${BL[i][0]} / $${BL[i][1]}${lack ? `<small>${fmt(need)}부터</small>` : ''}`; });
+  document.querySelectorAll('#blPop [data-bl]').forEach(b => { const i = +b.dataset.bl, need = 20 * BL[i][1], cur = S.tour ? !!S.tour.ov && S.tour.ov[1] === BL[i][1] : i === S.bl, lack = !S.tour && !cur && myMoney() < need;
+    b.setAttribute('aria-pressed', S.blPend != null ? i === S.blPend : cur); b.disabled = lack; b.innerHTML = `$${BL[i][0]} / $${BL[i][1]}${lack ? `<small>${fmt(need)}부터</small>` : ''}`; });
   $('blPop').hidden = !$('blPop').hidden;
 };
 $('blPop').innerHTML = BL.map(([s, b], i) => `<button data-bl="${i}">$${s} / $${b}</button>`).join('');
@@ -3642,7 +3646,7 @@ function shuffleHand(){
   if (live){ HG++; S.lk = {}; S.myLog = []; abandonHand(); }
   $('tourGate').hidden = true; $('exSheet').hidden = true;
   sfx('chip', .5);
-  startHand().then(() => {}, () => {});
+  startHand(true).then(() => {}, () => {});
   if (S.phase === 'play') S.coach = {cls:'', text:live ? '셔플 — 이 판은 없던 판으로 하고 같은 자리에서 새로 받았습니다(건 칩은 돌려받음 · 기록에 안 남습니다)' : ''};
 }
 // 직전 핸드 — 게임을 멈추고 그 판이 끝난 테이블을 통째로 다시 그린다. 돌아오면 멈춘 자리에서 그대로 이어진다
