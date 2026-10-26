@@ -3150,6 +3150,7 @@ function rerollFut(){
   while (m < 5 && i >= 0){ i--; const k = m === 0 ? 3 : 1; for (let j = 0; j < k && i >= 0; j++){ pos.push(i--); m++; } }
   const rest = d.map((_, k) => k).filter(k => !pos.includes(k));
   for (const a of pos){ if (!rest.length) break; const r = rest.splice(Math.floor(Math.random() * rest.length), 1)[0]; [d[a], d[r]] = [d[r], d[a]]; }
+  if (S.rp && S.rp.deck) for (let k = 0; k < d.length; k++) S.rp.deck[k] = structuredClone(d[k]);   // 「다시」도 바꾼 보드로 — 덱은 끝에서만 빼므로 위치 k 가 판 시작 덱의 k 와 같다
   S.eq = null; S.coach = {cls:'tip', text:`보드 ${5 - n}장을 새로 바꿨습니다 — 같은 패로 다른 경우의 수(「POT」을 누를 때마다)`}; render();
 }
 function renderFut(){   // 다 보고 치기: 아직 안 깐 보드 칸에 나올 카드를 앞면으로(깐 카드와 같은 색)
