@@ -814,14 +814,17 @@ body{margin:0}
 .sitbtn:hover{background:var(--brass);color:var(--ink)}
 .prof p{margin:0;font-size:13px;line-height:1.6;color:var(--ivory)}
 /* 아래 칸 */
-.sizerow{display:grid;grid-template-columns:repeat(3,auto) auto minmax(0,1fr) auto;gap:5px;align-items:center}
+.sizerow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:5px;align-items:center}
+.szset{grid-column:1/-1;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.szset .sz{padding-left:0 !important;padding-right:0 !important;text-align:center}
 .szpm{width:34px;height:34px;border-radius:50%;border:1px solid var(--brass-soft);background:rgba(0,0,0,.35);color:var(--brass);font:800 20px/1 var(--ui);padding:0;cursor:pointer;touch-action:manipulation}
 .szpm:active:not(:disabled){background:var(--brass);color:var(--ink)}
 .szpm:disabled{opacity:.3}
 .sz{border:1px solid var(--brass-soft);background:rgba(0,0,0,.35);color:var(--ivory);border-radius:999px;padding:5px 10px;font-size:11.5px;font-weight:800;white-space:nowrap}
 .sz:disabled,.sizerow input:disabled{opacity:.3}
 .sizerow input{width:100%;min-width:0;margin:0;accent-color:#c9a24a}
-.btns.acts{grid-template-columns:repeat(4,minmax(0,1fr))}
+.btns.acts{grid-template-columns:repeat(3,minmax(0,1fr))}
+#aAll{display:none}   /* 올인 = 레이즈를 끝까지 올려 내기(키 A 는 그대로) */
 .btns.post{grid-template-columns:1fr 1fr 1.6fr}
 .btns.post .b{justify-content:center}
 .card.rab{outline:2px dashed var(--brass);outline-offset:2px;cursor:pointer}
@@ -1059,7 +1062,7 @@ body.viewing .felt{box-shadow:0 0 0 2px var(--brass),inset 0 0 0 2px var(--brass
     <div class="bankline"><span>내 칩<b id="bankAmt">0</b></span><span class="tnote" id="tnote"></span><button id="bBuy">+$100 받기</button></div>
     <div class="chiprow" id="chipRow"><button class="chip" data-v="1" style="--c:var(--chip1)"><span>$1</span></button><button class="chip" data-v="2" style="--c:var(--chip2)"><span>$2</span></button><button class="chip" data-v="5" style="--c:var(--chip5)"><span>$5</span></button><button class="chip" data-v="10" style="--c:var(--chip10)"><span>$10</span></button><button class="chip" data-v="20" style="--c:var(--chip20)"><span>$20</span></button><button class="chipx" id="chipX" aria-label="쌓은 칩 지우기">↺</button></div>
     <div class="sizerow" id="sizeRow">
-      <button class="sz" data-f="0.5">½팟</button><button class="sz" data-f="0.75">¾팟</button><button class="sz" data-f="1">팟</button>
+      <div class="szset"><button class="sz" data-f="0.25">¼팟</button><button class="sz" data-f="0.5">½팟</button><button class="sz" data-f="0.75">¾팟</button><button class="sz" data-f="1">팟</button><button class="sz" data-bb="2">2BB</button><button class="sz" data-bb="3">3BB</button><button class="sz" data-bb="4">4BB</button></div>
       <button class="szpm" id="szM" aria-label="$1 내리기">−</button><input type="range" id="sizeR" min="0" max="1000" step="1" value="0" aria-label="베팅 크기"><button class="szpm" id="szP" aria-label="$1 올리기">+</button>
     </div>
     <div class="btns acts" id="actsRow">
@@ -2459,7 +2462,7 @@ $('aAll').onclick = () => { if (!S.wait){ armPre('all'); return; } const o = opt
 document.querySelectorAll('.sz').forEach(b => b.onclick = () => {
   if (!S.wait) return;
   const o = opts(0);
-  S.size = b.dataset.f === 'min' ? o.minTo : potSize(0, +b.dataset.f);
+  S.size = b.dataset.bb ? clampTo(+b.dataset.bb * bbAmt(), o) : b.dataset.f === 'min' ? o.minTo : potSize(0, +b.dataset.f);   // NBB = 그 금액까지(최소 레이즈보다 작으면 최소로)
   render();
 });
 function szStep(d){ if (!S.wait) return; const o = opts(0); if (!o.canRaise) return; S.size = clampTo(clampTo(S.size, o) + d, o); render(); }
@@ -3210,7 +3213,7 @@ function renderActs(){
   const owe = Math.max(0, S.curBet - p.bet), freeNow = owe === 0, ok2 = '<kbd>차례 오면 바로</kbd>';
   setHTML($('aCall'), my ? (o.toCall > 0 ? `${o.toCall >= p.stack ? '콜 올인' : '콜'}<kbd>${fmt(o.toCall)}</kbd>` : '체크<kbd>C</kbd>')
     : pk('call') ? (pq === 'call' ? `${freeNow ? '체크' : '콜'} 예약 ✓${ok2}` : `미리 ${freeNow ? '체크' : '콜'}<kbd>${freeNow ? 'C' : fmt(Math.min(owe, p.stack))}</kbd>`) : '체크<kbd>C</kbd>');
-  setHTML($('aRaise'), my ? `${S.curBet > 0 ? '레이즈' : '베팅'}<kbd>${o.canRaise ? fmt(clampTo(S.size, o)) : 'R'}</kbd>`
+  setHTML($('aRaise'), my ? `${o.canRaise && clampTo(S.size, o) >= o.maxTo ? '올인' : S.curBet > 0 ? '레이즈' : '베팅'}<kbd>${o.canRaise ? fmt(clampTo(S.size, o)) : 'R'}</kbd>`
     : pk('raise') ? (pq === 'raise' ? `${S.curBet > 0 ? '레이즈' : '베팅'} 예약 ✓<kbd>추천 금액으로</kbd>` : `미리 ${S.curBet > 0 ? '레이즈' : '베팅'}<kbd>R</kbd>`) : `${S.curBet > 0 && S.phase === 'play' ? '레이즈' : '베팅'}<kbd>R</kbd>`);
   setHTML($('aAll'), my ? `올인<kbd>${fmt(p.stack + p.bet)}</kbd>` : pk('all') ? (pq === 'all' ? `올인 예약 ✓${ok2}` : '미리 올인<kbd>A</kbd>') : '올인<kbd>A</kbd>');
   setHTML($('aFold'), pk('fold') ? (pq === 'fold' ? `${freeNow ? '체크/폴드' : '폴드'} 예약 ✓${ok2}` : '미리 폴드<kbd>F</kbd>') : '폴드<kbd>F</kbd>');
