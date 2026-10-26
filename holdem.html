@@ -627,6 +627,7 @@ body{margin:0}
 .mid .r2{font-size:9px;letter-spacing:.2em;color:rgba(241,232,214,.28);font-weight:700}
 .potwrap{position:absolute;left:0;right:0;margin-inline:auto;width:max-content;bottom:calc(100% - var(--cy) + var(--cw) * .85 + 6px);--cw:clamp(38px,10.4vw,50px);display:flex;align-items:flex-end;gap:7px;z-index:1}
 .potcols{display:flex;gap:1px;align-items:flex-end;height:34px}
+.potwrap{flex-direction:column;align-items:center;gap:3px}   /* 팟 칩은 POT 알약 위에 쌓는다 — 옆에 두면 알약이 한쪽으로 밀린다 */
 .pcol{position:relative;width:24px;height:var(--h)}
 .pcol .pc{width:24px;height:24px;box-shadow:0 6px 0 color-mix(in srgb,var(--c) 58%,#000),0 6px 0 1px rgba(0,0,0,.25),0 9px 6px rgba(0,0,0,.45)}
 .potamt{font-size:12px;font-weight:800;padding:2px 10px;border-radius:999px;background:rgba(0,0,0,.5);font-variant-numeric:tabular-nums;white-space:nowrap;margin-bottom:4px}
@@ -3017,7 +3018,7 @@ function layoutSeats(){
   // 보드 다섯 칸 · 팟 · 덱도 비켜야 할 자리
   const sl = f.querySelector('.slots').children, s0 = sl[0], s4 = sl[sl.length - 1], so = f.querySelector('.slots');
   boxes.push([s0.offsetLeft - 2, so.offsetTop - 2, s4.offsetLeft + s4.offsetWidth - s0.offsetLeft + 4, s0.offsetHeight + 4]);
-  const pw = f.querySelector('.potwrap'); boxes.push([cx - 92, pw.offsetTop + pw.offsetHeight - 50, 184, 54]);   // 팟은 아래(보드 위)에 붙어 위로 자란다 — 알약 높이까지 비운다   // 팟 칩 기둥 + 「팟 $00」 글씨가 다 서는 폭
+  const pw = f.querySelector('.potwrap'); boxes.push([cx - 92, pw.offsetTop - 4, 184, pw.offsetHeight + 4]);   // 팟은 아래(보드 위)에 붙어 위로 자란다 — 알약 높이까지 비운다   // 팟 칩 기둥 + 「팟 $00」 글씨가 다 서는 폭
   // 덱은 숨겼다(2026-10-25) — 비킬 자리에서 뺀다
   boxes.push([8, H - 48, 112, 42]);   // 왼쪽 아래 [셔플] 단추 자리(판 중에만 보이지만 늘 비워 둔다)
   const inOval = TB ? (mx, my) => my >= TB.y0 + 8 && my <= TB.y1 - 8 && Math.abs(mx - cx) <= TB.hw(my) - 10
@@ -3154,7 +3155,7 @@ function rerollFut(){
   const rest = d.map((_, k) => k).filter(k => !pos.includes(k));
   for (const a of pos){ if (!rest.length) break; const r = rest.splice(Math.floor(Math.random() * rest.length), 1)[0]; [d[a], d[r]] = [d[r], d[a]]; }
   if (S.rp && S.rp.deck) for (let k = 0; k < d.length; k++) S.rp.deck[k] = structuredClone(d[k]);   // 「다시」도 바꾼 보드로 — 덱은 끝에서만 빼므로 위치 k 가 판 시작 덱의 k 와 같다
-  S.eq = null; S.coach = {cls:'tip', text:`보드 ${5 - n}장을 새로 바꿨습니다 — 같은 패로 다른 경우의 수(「POT」을 누를 때마다)`}; render();
+  S.eq = null; render();   // 코치 칸은 그대로(추천을 덮지 않는다)
 }
 function renderFut(){   // 다 보고 치기: 아직 안 깐 보드 칸에 나올 카드를 앞면으로(깐 카드와 같은 색)
   const sl = $('felt').querySelector('.slots'), on = S.openNow && S.phase === 'play' && !VIEW, fut = on ? futBoard() : [];
@@ -3953,7 +3954,6 @@ $('felt').addEventListener('click', e => {
       // 2026-10-26 David «열고치던 덮고치던 버튼처럼, 다음판도 이어지게» — 누르는 즉시 지금 판도 열리고/덮인다
       S.opt.open = !S.opt.open; S.openNow = S.opt.open;
       if (!S.openNow && S.phase === 'play') for (const q of S.seats) if (!q.me) for (const c of q.hole) delete c.revealT;
-      S.coach = {cls:'tip', text:S.opt.open ? '열고 치기 — 상대 패와 보드 다섯 장이 보입니다(다음 판도 계속 · 보드를 다시 누르면 덮습니다)' : '덮고 치기 — 상대 패와 남은 보드를 덮었습니다(다음 판도 계속)'};
       save(); render(); return; } }
   if (e.target.closest('.potwrap') && S.openNow && S.phase === 'play' && !VIEW && !MP && S.board.length < 5){ rerollFut(); return; }
   { const ce = e.target.closest('#board .card.rab'); if (ce && S.rab && S.rab.steps.length){ const last = S.rab.steps[S.rab.steps.length - 1].got; if (last.some(c => cardEls.get(c.id) === ce)){ rabbitUndo(); return; } } }
