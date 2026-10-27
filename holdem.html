@@ -769,6 +769,10 @@ body{margin:0}
 .exr b{color:var(--brass);font-size:12px;font-weight:800}
 .sdmore{pointer-events:auto;align-self:center;margin-top:3px;border:1px solid var(--brass-soft);background:rgba(0,0,0,.35);color:#f3d27a;border-radius:999px;padding:3px 12px;font-size:11px;font-weight:800;cursor:pointer}
 #coach .exhint{color:var(--brass);font-weight:800;cursor:pointer}
+#coach .cbody{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#coach.full{justify-content:flex-start !important;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#coach.full .cbody{display:block;-webkit-line-clamp:unset;overflow:visible}
+#coach[data-more="1"]{cursor:pointer}
 .sdx{position:absolute;top:5px;right:5px;width:24px;height:24px;padding:0;border-radius:50%;border:1px solid var(--brass-soft);background:rgba(0,0,0,.55);color:var(--ivory);font-size:12px;line-height:1;cursor:pointer;pointer-events:auto;z-index:1}
 .sdp .sdh{padding-inline:26px}
 .sdr.win .hn{color:var(--good)}
@@ -3253,7 +3257,13 @@ function renderCoach(){
   const ls = String(t).split('\n');
   // 「K9 오프는 시작 패 상위 43% — 설명」은 패·순위 한 줄 + 설명 한 줄로 나눠 그린다(문구 자체는 복기에서도 쓰므로 그대로)
   const body = ls.slice(1).join(' '), m = body.match(/^(.+?)(?:은|는) 시작 패 ((?:상위|하위) \d+%) — (.+)$/);
-  setHTML(co, ls.length > 1 ? `<b style="font-size:12.5px">${esc(ls[0])}</b>${m ? `<span class="crk">${esc(m[1])} · ${esc(m[2])}</span><span>${esc(m[3])}</span>` : `<span>${esc(body)}</span>`}` : esc(t));
+  // 판 중 추천은 제목 한 줄 + 이유 두 줄까지 — 넘치면 제목 끝에 「자세히 ▸」, 칸을 누르면 전문(다시 누르면 접힘 · 새 추천이 오면 접힘)
+  const full = S.coachFull === t;
+  setHTML(co, ls.length > 1 ? `<b style="font-size:12.5px">${esc(ls[0])}<span class="exhint cmore" hidden> 자세히 ▸</span></b>${m ? `<span class="crk">${esc(m[1])} · ${esc(m[2])}</span><span class="cbody">${esc(m[3])}</span>` : `<span class="cbody">${esc(body)}</span>`}` : esc(t));
+  co.classList.toggle('full', full);
+  const cb = co.querySelector('.cbody'), cm = co.querySelector('.cmore');
+  if (cb && cm){ cm.textContent = full ? ' 접기 ▴' : ' 자세히 ▸'; cm.hidden = !full && cb.scrollHeight <= cb.clientHeight + 1; }
+  co.dataset.more = cb && cm && !cm.hidden ? '1' : '';
 }
 const miniC = (c, h, g) => `<span class="mc ${c.s === 'h' || c.s === 'd' ? 'r' : 'k'}${h ? ' h' : ''}${g ? ' g' : ''}">${c.r}${SYM[c.s]}</span>`;
 // 족보를 이루는 카드만: 포카드 4장 · 스트레이트·플러시·풀하우스 5장 · 트리플 3장 · 투페어 4장 · 원페어 2장 · 하이카드 1장
@@ -3550,7 +3560,7 @@ $('tBlinds').onclick = () => {
 $('tMenu').onclick = e => { e.stopPropagation(); const o = $('tools2').classList.toggle('open'); $('tMenu').setAttribute('aria-expanded', o); };
 $('tools2').addEventListener('click', () => { $('tools2').classList.remove('open'); $('tMenu').setAttribute('aria-expanded', false); });
 document.addEventListener('click', e => { if (e.target.closest && !e.target.closest('#tools2') && !e.target.closest('#tMenu')) $('tools2').classList.remove('open'); });
-$('coach').addEventListener('click', e => { if (e.target.closest('#bNext')) startHand(); else if (e.target.closest('#bQuit')) showQuit(); else if (S.explain && S.phase === 'done' && !VIEW) openExplain(); });
+$('coach').addEventListener('click', e => { if (S.phase === 'play' && $('coach').dataset.more){ const t = S.coach.text; S.coachFull = S.coachFull === t ? null : t; renderCoach(); return; } if (e.target.closest('#bNext')) startHand(); else if (e.target.closest('#bQuit')) showQuit(); else if (S.explain && S.phase === 'done' && !VIEW) openExplain(); });
 // 그만하기: 이번에 앉아서 친 결과
 function showQuit(){
   if (MP){ mpLeave(); return; }
